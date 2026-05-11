@@ -3,6 +3,7 @@ import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
 import './App.css'
+import { NavLink } from 'react-router'
 
 function App() {
   const [count, setCount] = useState(0)
@@ -28,6 +29,9 @@ function App() {
         >
           Count is {count}
         </button>
+        <NavLink to="/sample">sample</NavLink>
+        <NavLink to="/complaint">complaint</NavLink>
+        <NavLink to="/outpass">outpass</NavLink>
       </section>
 
       <div className="ticks"></div>
