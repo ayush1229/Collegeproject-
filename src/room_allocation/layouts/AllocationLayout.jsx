@@ -21,6 +21,7 @@ const NAV_ITEMS = [
   { label: 'My Squad',  Icon: SquadIcon, to: '/allocation/squad'        },
   { label: 'Room Grid', Icon: RoomIcon,  to: null                      },
   { label: 'Timeline',  Icon: ClockIcon, to: '/allocation/waiting-room' },
+  { label: 'History',   Icon: HelpIcon,  to: '/allocation/history'      },
   { label: 'Support',   Icon: HelpIcon,  to: null                      },
 ];
 

@@ -2,10 +2,11 @@ import { NavLink } from 'react-router-dom';
 
 /* Pages that exist — others render as non-interactive text */
 const NAV_LINKS = [
-  { label: 'Allocation',  to: '/allocation/squad',    exists: true  },
-  { label: 'Squads',      to: '/allocation/squad',    exists: true  },
-  { label: 'Preferences', to: null,                   exists: false },
-  { label: 'Results',     to: null,                   exists: false },
+  { label: 'Allocation',   to: '/allocation',              exists: true  },
+  { label: 'Squads',       to: '/allocation/squad',        exists: true  },
+  { label: 'Preferences',  to: null,                       exists: false },
+  { label: 'Results',      to: '/allocation/results',      exists: true  },
+  { label: 'History',      to: '/allocation/history',      exists: true  },
 ];
 
 export default function TopNav({ liveStatus = true }) {
@@ -23,6 +24,7 @@ export default function TopNav({ liveStatus = true }) {
             <NavLink
               key={label}
               to={to}
+              end
               className={({ isActive }) =>
                 [
                   'text-xs font-medium tracking-[0.02em] pb-[3px] border-b-2 transition-all duration-150 no-underline',
