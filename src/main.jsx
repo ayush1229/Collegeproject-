@@ -17,13 +17,21 @@ import SelectionLockedPage   from './room_allocation/pages/SelectionLockedPage'
 import AllocationResultsPage from './room_allocation/pages/AllocationResultsPage'
 import PenaltyPage           from './room_allocation/pages/PenaltyPage'
 import AllocationHistoryPage from './room_allocation/pages/AllocationHistoryPage'
+import Login from './auth/login.jsx'
+import Signup from './auth/signup.jsx'
+import Student from './student/student.jsx'
+
 
 const router = createBrowserRouter([
   // App routes
-  { path: '/',          element: <App />       },
+  { path: '/',          element: <Login />       },
   { path: '/sample',    element: <Sample />    },
   { path: '/complaint', element: <Complaint /> },
   { path: '/outpass',   element: <Outpass />   },
+  { path: '/login',     element: <Login />     },
+  { path: '/signup',    element: <Signup />    },
+  { path: '/student',   element: <Student />   },
+  
 
   // Room allocation module
   { path: '/allocation',                 element: <AllocationGatewayPage />              },
