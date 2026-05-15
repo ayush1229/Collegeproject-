@@ -4,6 +4,24 @@ import { Link, useNavigate } from "react-router-dom";
 function Signup() {
   const navigate = useNavigate();
 
+  const getRedirectPath = (role) => {
+    switch (role) {
+      case "admin":
+        return "/admin";
+      case "warden":
+        return "/guard";
+      case "guard":
+        return "/guard";
+      case "chief-warden":
+        return "/warden";
+      case "attendant":
+        return "/admin";
+      case "student":
+      default:
+        return "/student";
+    }
+  };
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -30,7 +48,7 @@ function Signup() {
     });
   };
 
-  const handleSignup = (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
 
     if (isStudent) {
@@ -54,8 +72,9 @@ function Signup() {
       }
     } else {
       if (
+        !formData.name ||
         !formData.email ||
-        !formData.username ||
+        !formData.phone ||
         !formData.password ||
         !formData.confirmPassword
       ) {
@@ -79,9 +98,70 @@ function Signup() {
       return;
     }
 
-     setError("");
+    try {
+      let payload;
 
-  alert("Account Created Successfully!");
+      if (formData.role === "student") {
+        payload = {
+          role: "student",
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          phone: formData.phone,
+          hostel: formData.hostel,
+          room: formData.room,
+          department: formData.department,
+        };
+      } else if (formData.role === "attendant") {
+        payload = {
+          role: "attendant",
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          phone: formData.phone,
+          hostel: formData.hostel,
+        };
+      } else {
+        payload = {
+          role: "guard",
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          phone: formData.phone,
+        };
+      }
+
+      const response = await fetch("http://localhost:4000/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "Signup failed");
+        return;
+      }
+
+      const savedUser = {
+        ...(data.user || {}),
+        role: payload.role,
+        token: data.token,
+      };
+
+      localStorage.setItem("token", data.token || "");
+      localStorage.setItem("user", JSON.stringify(savedUser));
+
+      setError("");
+      alert("Account Created Successfully!");
+      navigate(getRedirectPath(savedUser.role));
+    } catch (err) {
+      console.error("Signup failed:", err);
+      setError("Could not connect to server");
+    }
   };
 
   return (
@@ -188,6 +268,15 @@ function Signup() {
           ) : (
             <>
               <input
+                type="text"
+                name="name"
+                placeholder="Full Name"
+                value={formData.name}
+                onChange={handleChange}
+                className="w-full border border-gray-300 p-3 rounded-md mb-4 outline-none focus:border-[#5b0e0e]"
+              />
+
+              <input
                 type="email"
                 name="email"
                 placeholder="College Mail"
@@ -197,10 +286,10 @@ function Signup() {
               />
 
               <input
-                type="text"
-                name="username"
-                placeholder="Username"
-                value={formData.username || ""}
+                type="tel"
+                name="phone"
+                placeholder="Phone Number (10 digits)"
+                value={formData.phone}
                 onChange={handleChange}
                 className="w-full border border-gray-300 p-3 rounded-md mb-4 outline-none focus:border-[#5b0e0e]"
               />
@@ -249,7 +338,7 @@ function Signup() {
           >
             <option value="student">Student</option>
             <option value="attendant">Attendant</option>
-            <option value="security">Security Guard</option>
+            <option value="guard">Security Guard</option>
           </select>
 
           <button

@@ -1,26 +1,53 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 function Student() {
   const navigate = useNavigate();
 
-  // Dummy data representing the logged-in student
-  const [studentData] = useState({
-    name: "Ayush Bhatt",
-    rollNo: "22BXX001",
-    photoUrl: "https://ui-avatars.com/api/?name=Ayush+Bhatt&background=f5f5f5&color=5b0e0e&size=150",
-    roomNo: "B-214",
-    roomType: "Double Occupancy",
-    fatherName: "Mr. Ramesh Bhatt",
-    mobileNumber: "+91 9876543210",
-    parentNumber: "+91 9123456780",
-    category: "General",
-    bloodGroup: "O+",
-    state: "Himachal Pradesh",
-    address: "123, Pine Grove, Shimla, Himachal Pradesh - 171001",
-  });
+  const [studentData, setStudentData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function fetchStudentProfile() {
+      const storedUser = JSON.parse(localStorage.getItem("user"));
+
+      if (!storedUser?.token || !storedUser?.role) {
+        navigate("/");
+        return;
+      }
+
+      try {
+        const response = await fetch("http://localhost:4000/auth/me", {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${storedUser.token}`,
+            role: storedUser.role,
+          },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          setError(data.message || "Failed to load student data");
+          setLoading(false);
+          return;
+        }
+
+        setStudentData(data.user);
+        setLoading(false);
+      } catch (err) {
+        console.error("Failed to load student profile:", err);
+        setError("Could not connect to server");
+        setLoading(false);
+      }
+    }
+
+    fetchStudentProfile();
+  }, [navigate]);
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
     localStorage.removeItem("user");
     navigate("/");
   };
@@ -28,11 +55,39 @@ function Student() {
   const handleOutpass = () => {
     // navigate("/outpass");
     alert("Redirecting to Outpass Portal");
+    navigate("/outpass");
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5] text-[#5b0e0e] font-semibold">
+        Loading student profile...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5] px-4">
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 max-w-md w-full text-center">
+          <p className="text-red-600 font-semibold mb-2">{error}</p>
+          <button
+            onClick={() => navigate("/")}
+            className="mt-4 bg-[#5b0e0e] text-white px-4 py-2 rounded-md"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const photoUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(studentData?.name || "Student")}&background=f5f5f5&color=5b0e0e&size=150`;
 
   const handleComplaint = () => {
     // navigate("/complaint");
     alert("Redirecting to Complaint Portal");
+    navigate("/complaint");
   };
 
   return (
@@ -83,7 +138,7 @@ function Student() {
             {/* Photograph */}
             <div className="absolute -top-16 border-4 border-white rounded-full bg-white shadow-md">
               <img
-                src={studentData.photoUrl}
+                src={photoUrl}
                 alt="Student Profile"
                 className="w-32 h-32 rounded-full object-cover"
               />
@@ -95,7 +150,7 @@ function Student() {
                 {studentData.name}
               </h2>
               <p className="text-[#5b0e0e] font-medium text-lg mt-1">
-                Roll No: {studentData.rollNo}
+                {studentData.email}
               </p>
             </div>
           </div>
@@ -112,50 +167,29 @@ function Student() {
               {/* Room Info */}
               <div className="flex flex-col">
                 <span className="text-sm text-gray-500 font-medium">Room No</span>
-                <span className="text-gray-800 font-semibold">{studentData.roomNo}</span>
+                <span className="text-gray-800 font-semibold">{studentData.room}</span>
               </div>
 
               <div className="flex flex-col">
-                <span className="text-sm text-gray-500 font-medium">Type of Room</span>
-                <span className="text-gray-800 font-semibold">{studentData.roomType}</span>
+                <span className="text-sm text-gray-500 font-medium">Hostel</span>
+                <span className="text-gray-800 font-semibold">{studentData.hostel}</span>
               </div>
 
               {/* Personal Info */}
               <div className="flex flex-col">
-                <span className="text-sm text-gray-500 font-medium">Father's Name</span>
-                <span className="text-gray-800 font-semibold">{studentData.fatherName}</span>
+                <span className="text-sm text-gray-500 font-medium">Department</span>
+                <span className="text-gray-800 font-semibold">{studentData.department}</span>
               </div>
 
               <div className="flex flex-col">
                 <span className="text-sm text-gray-500 font-medium">Mobile Number</span>
-                <span className="text-gray-800 font-semibold">{studentData.mobileNumber}</span>
+                <span className="text-gray-800 font-semibold">{studentData.phone}</span>
               </div>
 
-              <div className="flex flex-col">
-                <span className="text-sm text-gray-500 font-medium">Parent's Number</span>
-                <span className="text-gray-800 font-semibold">{studentData.parentNumber}</span>
-              </div>
-
-              <div className="flex flex-col">
-                <span className="text-sm text-gray-500 font-medium">Blood Group</span>
-                <span className="text-gray-800 font-semibold">{studentData.bloodGroup}</span>
-              </div>
-
-              <div className="flex flex-col">
-                <span className="text-sm text-gray-500 font-medium">Category</span>
-                <span className="text-gray-800 font-semibold">{studentData.category}</span>
-              </div>
-
-              <div className="flex flex-col">
-                <span className="text-sm text-gray-500 font-medium">State</span>
-                <span className="text-gray-800 font-semibold">{studentData.state}</span>
-              </div>
-
-              {/* Address */}
               <div className="flex flex-col md:col-span-2 lg:col-span-3 mt-2">
-                <span className="text-sm text-gray-500 font-medium">Permanent Address</span>
+                <span className="text-sm text-gray-500 font-medium">Account Role</span>
                 <span className="text-gray-800 font-semibold bg-gray-50 p-3 rounded-md border border-gray-100 mt-1">
-                  {studentData.address}
+                  {studentData.role || "student"}
                 </span>
               </div>
 

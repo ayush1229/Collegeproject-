@@ -7,6 +7,11 @@ import App from './App.jsx'
 import Sample from './sample.jsx'
 import Complaint from './complaint/complaint.jsx'
 import Outpass from './outpass/outpass.jsx'
+import Outpass1 from './outpass/outpass_form.jsx'
+import Admin from './admin/admin.tsx'
+import Guard from './guard/guard.tsx'
+import Warden from './chief-warden/warden.tsx'
+import ComplaintForm from './complaint/ComplaintForm.jsx'
 
 // Room allocation pages
 import AllocationGatewayPage from './room_allocation/pages/AllocationGatewayPage'
@@ -27,10 +32,15 @@ const router = createBrowserRouter([
   { path: '/',          element: <Login />       },
   { path: '/sample',    element: <Sample />    },
   { path: '/complaint', element: <Complaint /> },
+  { path: '/complaint-form', element: <ComplaintForm /> },
   { path: '/outpass',   element: <Outpass />   },
   { path: '/login',     element: <Login />     },
   { path: '/signup',    element: <Signup />    },
   { path: '/student',   element: <Student />   },
+  { path: '/apply-outpass', element: <Outpass1 /> },
+  { path: '/admin',     element: <Admin />     },
+  { path: '/guard',     element: <Guard />     },
+  {path:'/warden', element:<Warden />},
   
 
   // Room allocation module

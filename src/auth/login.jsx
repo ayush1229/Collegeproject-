@@ -4,9 +4,26 @@ import { Link, useNavigate } from "react-router-dom";
 function Login() {
   const navigate = useNavigate();
 
+  const getRedirectPath = (role) => {
+    switch (role) {
+      case "admin":
+        return "/admin";
+      case "warden":
+        return "/guard";
+      case "guard":
+        return "/guard";
+      case "chief-warden":
+        return "/warden";
+      case "attendant":
+        return "/admin";
+      case "student":
+      default:
+        return "/student";
+    }
+  };
+
   const [formData, setFormData] = useState({
-    collegeMail: "",
-    username: "",
+    email: "",
     password: "",
     role: "student",
   });
@@ -28,7 +45,7 @@ function Login() {
       }
 
       try {
-        await fetch("http://localhost:4000/auth/login", {
+        const response = await fetch("http://localhost:4000/auth/login", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -36,42 +53,71 @@ function Login() {
             role: storedUser.role,
           },
         });
+
+        if (response.ok) {
+          navigate(getRedirectPath(storedUser.role));
+        }
       } catch (error) {
         console.error("Auth check failed:", error);
       }
     }
 
     checkAuth();
-  }, []);
+  }, [navigate]);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
     if (
-      !formData.collegeMail ||
-      !formData.username ||
-      !formData.password
+      !formData.email ||
+      !formData.password ||
+      !formData.role
     ) {
       setError("Please fill all fields");
       return;
     }
 
-    if (!formData.collegeMail.endsWith("@nith.ac.in")) {
+    if (!formData.email.endsWith("@nith.ac.in")) {
       setError("Use your college email");
       return;
     }
 
-    const user = {
-      collegeMail: formData.collegeMail,
-      username: formData.username,
-      role: formData.role,
-      token: "dummyToken",
-    };
+    try {
+      const response = await fetch("http://localhost:4000/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          role: formData.role,
+        }),
+      });
 
-    localStorage.setItem("user", JSON.stringify(user));
-     setError("");
+      const data = await response.json();
 
-  alert("Successfully Logged In!");
+      if (!response.ok) {
+        setError(data.message || "Login failed");
+        return;
+      }
+
+      const user = {
+        ...(data.user || {}),
+        role: formData.role,
+        token: data.token,
+      };
+
+      localStorage.setItem("token", data.token || "");
+      localStorage.setItem("user", JSON.stringify(user));
+
+      setError("");
+      alert("Successfully Logged In!");
+      navigate(getRedirectPath(user.role));
+    } catch (err) {
+      console.error("Login failed:", err);
+      setError("Could not connect to server");
+    }
   };
 
   return (
@@ -110,23 +156,19 @@ function Login() {
 
           <input
             type="email"
-            name="collegeMail"
+            name="email"
             placeholder="College Mail"
+            value={formData.email}
             onChange={handleChange}
             className="w-full border border-gray-300 p-3 rounded-md mb-4 outline-none focus:border-[#5b0e0e]"
           />
 
-          <input
-            type="text"
-            name="username"
-            placeholder="Username"
-            onChange={handleChange}
-            className="w-full border border-gray-300 p-3 rounded-md mb-4 outline-none focus:border-[#5b0e0e]"
-          />
+          
 
           <input
             type="password"
             name="password"
+            value={formData.password}
             placeholder="Password"
             onChange={handleChange}
             className="w-full border border-gray-300 p-3 rounded-md mb-5 outline-none focus:border-[#5b0e0e]"
@@ -134,14 +176,15 @@ function Login() {
 
           <select
             name="role"
+            value={formData.role}
             onChange={handleChange}
             className="w-full border border-gray-300 p-3 rounded-md mb-6 outline-none focus:border-[#5b0e0e]"
           >
             <option value="student">Student</option>
             <option value="attendant">Attendant</option>
+            <option value="guard">Security Guard</option>
             <option value="warden">Warden</option>
-            <option value="chiefwarden">Chief Warden</option>
-            <option value="security">Security Guard</option>
+            <option value="chief-warden">Chief-warden</option>
           </select>
 
           <button

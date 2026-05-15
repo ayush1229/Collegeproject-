@@ -1,47 +1,59 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 
 function Outpass() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('pending');
   const [showApplyForm, setShowApplyForm] = useState(false);
+  const [outpasses, setOutpasses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   
-  // Dummy data for outpass requests
-  const [outpasses, setOutpasses] = useState([
-    {
-      id: 1,
-      destination: 'Shimla, Himachal Pradesh',
-      reason: 'Attending cousin\'s wedding',
-      departureDate: '2024-05-20, 10:00 AM',
-      returnDate: '2024-05-25, 05:00 PM',
-      appliedOn: '2024-05-12',
-      status: 'pending'
-    },
-    {
-      id: 2,
-      destination: 'Home (Chandigarh)',
-      reason: 'Diwali Break',
-      departureDate: '2023-11-10, 08:00 AM',
-      returnDate: '2023-11-16, 08:00 PM',
-      appliedOn: '2023-11-01',
-      status: 'approved'
-    },
-    {
-      id: 3,
-      destination: 'Local Market',
-      reason: 'Purchasing project supplies',
-      departureDate: '2024-04-15, 02:00 PM',
-      returnDate: '2024-04-15, 08:00 PM',
-      appliedOn: '2024-04-14',
-      status: 'approved'
+  useEffect(() => {
+    async function fetchOutpasses() {
+      const storedUser = JSON.parse(localStorage.getItem('user'));
+
+      if (!storedUser?.token || !storedUser?.role) {
+        navigate('/');
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:4000/outpass/my-outpasses', {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${storedUser.token}`,
+            role: storedUser.role,
+          },
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          setError(data.message || 'Failed to load outpasses');
+          setLoading(false);
+          return;
+        }
+
+        setOutpasses(data.outpasses || []);
+        setLoading(false);
+      } catch (err) {
+        console.error('Failed to fetch outpasses:', err);
+        setError('Could not connect to server');
+        setLoading(false);
+      }
     }
-  ]);
+
+    fetchOutpasses();
+  }, [navigate]);
 
   const pendingRequests = outpasses.filter(o => o.status === 'pending');
+  const rejectedRequests = outpasses.filter(o => o.status === 'rejected');
   const approvedRequests = outpasses.filter(o => o.status === 'approved');
-  const displayRequests = activeTab === 'pending' ? pendingRequests : approvedRequests;
+  const displayRequests = activeTab === 'pending' ? pendingRequests : activeTab === 'rejected' ? rejectedRequests : approvedRequests;
 
   const handleLogout = () => {
+    localStorage.removeItem("token");
     localStorage.removeItem("user");
     navigate("/");
   };
@@ -50,8 +62,66 @@ function Outpass() {
   const getStatusStyle = (status) => {
     return status === 'pending' 
       ? 'bg-orange-100 text-orange-800 border-orange-200' 
-      : 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      : status === 'rejected'
+        ? 'bg-rose-100 text-rose-800 border-rose-200'
+        : 'bg-emerald-100 text-emerald-800 border-emerald-200';
   };
+
+  const formatDate = (value) => {
+    if (!value) return 'N/A';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  const formatDateTime = (value) => {
+    if (!value) return 'N/A';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+
+    return date.toLocaleString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5] text-[#5b0e0e] font-semibold">
+        Loading your outpasses...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#f5f5f5] px-4">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 max-w-md w-full text-center">
+          <p className="text-red-600 font-semibold mb-2">{error}</p>
+          <button
+            onClick={() => navigate('/student')}
+            className="mt-4 bg-[#5b0e0e] text-white px-4 py-2 rounded-md"
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] flex flex-col">
@@ -88,12 +158,12 @@ function Outpass() {
 
       {/* 2. Secondary Sub-Navbar (Joined to Primary Nav) */}
       <div className="w-full bg-white shadow-sm border-b border-gray-200 sticky top-0 z-0">
-        <div className="max-w-4xl mx-auto px-4 flex justify-between items-center">
+        <div className="max-w-4xl mx-auto px-4 flex justify-between items-center overflow-x-auto">
           
           {/* Tabs */}
           <div className="flex space-x-8">
             <button 
-              className={`py-4 text-sm font-semibold border-b-4 transition-colors duration-200 flex items-center gap-2 ${
+              className={`py-4 text-sm font-semibold border-b-4 transition-colors duration-200 flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'pending' 
                   ? 'border-[#5b0e0e] text-[#5b0e0e]' 
                   : 'border-transparent text-gray-500 hover:text-gray-800'
@@ -107,7 +177,7 @@ function Outpass() {
             </button>
             
             <button 
-              className={`py-4 text-sm font-semibold border-b-4 transition-colors duration-200 flex items-center gap-2 ${
+              className={`py-4 text-sm font-semibold border-b-4 transition-colors duration-200 flex items-center gap-2 whitespace-nowrap ${
                 activeTab === 'approved' 
                   ? 'border-[#5b0e0e] text-[#5b0e0e]' 
                   : 'border-transparent text-gray-500 hover:text-gray-800'
@@ -119,25 +189,32 @@ function Outpass() {
                 {approvedRequests.length}
               </span>
             </button>
+
+            {/* NEW REJECTED TAB ADDED HERE */}
+            <button 
+              className={`py-4 text-sm font-semibold border-b-4 transition-colors duration-200 flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'rejected' 
+                  ? 'border-[#5b0e0e] text-[#5b0e0e]' 
+                  : 'border-transparent text-gray-500 hover:text-gray-800'
+              }`}
+              onClick={() => setActiveTab('rejected')}
+            >
+              Rejected Requests
+              <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === 'rejected' ? 'bg-[#5b0e0e] text-white' : 'bg-gray-200 text-gray-600'}`}>
+                {rejectedRequests.length}
+              </span>
+            </button>
           </div>
 
           {/* Apply Action Button */}
           <button 
-            className="bg-[#5b0e0e] hover:bg-[#741616] text-white px-5 py-2 rounded-md font-medium text-sm transition shadow-sm"
-            onClick={() => setShowApplyForm(!showApplyForm)}
+            className="bg-[#5b0e0e] hover:bg-[#741616] text-white px-5 py-2 rounded-md font-medium text-sm transition shadow-sm ml-4 whitespace-nowrap"
+            onClick={() => {navigate("/apply-outpass")}}
           >
             + Apply for Outpass
           </button>
         </div>
       </div>
-
-      {/* Modal PlaceHolder for Application Form */}
-      {/* {showApplyForm && (
-        <OutpassForm 
-          onClose={() => setShowApplyForm(false)}
-          onSubmit={handleApplyOutpass}
-        />
-      )} */}
 
       {/* 3. Main Content Area (Column Layout) */}
       <div className="flex-1 w-full max-w-4xl mx-auto py-8 px-4 flex flex-col space-y-4">
@@ -145,7 +222,7 @@ function Outpass() {
         {displayRequests.length > 0 ? (
           displayRequests.map(request => (
             <div 
-              key={request.id} 
+              key={request.id || request._id} 
               className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col transition-all hover:shadow-md"
             >
               <div className="flex justify-between items-start mb-4">
@@ -162,17 +239,17 @@ function Outpass() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg border border-gray-100 mb-4">
                 <div>
                   <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Departure</span>
-                  <span className="text-gray-800 font-medium">{request.departureDate}</span>
+                  <span className="text-gray-800 font-medium">{formatDate(request.date_from)}</span>
                 </div>
                 <div>
                   <span className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Return</span>
-                  <span className="text-gray-800 font-medium">{request.returnDate}</span>
+                  <span className="text-gray-800 font-medium">{formatDate(request.date_to)}</span>
                 </div>
               </div>
               
               <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                 <span className="text-sm text-gray-500 font-medium">
-                  Applied on: {request.appliedOn}
+                  Applied on: {formatDateTime(request.date_created)}
                 </span>
                 
                 <button className="text-[#5b0e0e] font-semibold text-sm hover:underline">
