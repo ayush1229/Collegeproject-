@@ -37,9 +37,7 @@ function Signup() {
   const [error, setError] = useState("");
   const isStudent = formData.role === "student";
   const showHostelField =
-    formData.role === "student" ||
-    formData.role === "attendant" 
-
+    formData.role === "student" || formData.role === "attendant";
 
   const handleChange = (e) => {
     setFormData({
@@ -142,6 +140,7 @@ function Signup() {
       const data = await response.json();
 
       if (!response.ok) {
+        // This automatically grabs the "User already exists" message from the backend
         setError(data.message || "Signup failed");
         return;
       }
@@ -166,24 +165,20 @@ function Signup() {
 
   return (
     <div className="min-h-screen flex bg-[#f5f5f5]">
-
       {/* Left Section */}
       <div className="hidden md:flex w-1/2 bg-[#5b0e0e] text-white items-center justify-center p-16">
         <div>
-          <h1 className="text-5xl font-bold mb-5">
-            Create Account
-          </h1>
+          <h1 className="text-5xl font-bold mb-5">Create Account</h1>
 
           <p className="text-lg text-gray-200 leading-8">
-            Register to access hostel services,
-            outpass requests and complaint management.
+            Register to access hostel services, outpass requests and complaint
+            management.
           </p>
         </div>
       </div>
 
       {/* Right Section */}
       <div className="flex w-full md:w-1/2 items-center justify-center px-6">
-
         <form
           onSubmit={handleSignup}
           className="bg-white w-full max-w-md rounded-xl shadow-sm border border-gray-200 p-10 max-h-[100vh] overflow-y-auto"
@@ -193,9 +188,7 @@ function Signup() {
           </h2>
 
           {error && (
-            <p className="text-red-500 text-sm mb-4">
-              {error}
-            </p>
+            <p className="text-red-500 text-sm mb-4">{error}</p>
           )}
 
           {isStudent ? (
@@ -350,10 +343,7 @@ function Signup() {
 
           <p className="text-center text-gray-600 mt-6">
             Already have an account?{" "}
-            <Link
-              to="/"
-              className="text-[#5b0e0e] font-medium"
-            >
+            <Link to="/" className="text-[#5b0e0e] font-medium">
               Login
             </Link>
           </p>
