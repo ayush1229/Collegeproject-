@@ -102,14 +102,13 @@ export function useSquad(studentId, hostelId) {
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  // ── Real-time: phase change may affect squad state ──────────────
+  // Real-time: phase change may affect squad state
   useEffect(() => {
-    const onPhase = () => refresh();
-    allocationSocket.on(WS_EVENTS.PHASE_CHANGED, onPhase);
-    allocationSocket.on(WS_EVENTS.EVALUATION_DONE, onPhase);
+    const cleanupPhase = allocationSocket.on(WS_EVENTS.PHASE_CHANGED, refresh);
+    const cleanupEval  = allocationSocket.on(WS_EVENTS.EVALUATION_DONE, refresh);
     return () => {
-      allocationSocket.off(WS_EVENTS.PHASE_CHANGED, onPhase);
-      allocationSocket.off(WS_EVENTS.EVALUATION_DONE, onPhase);
+      cleanupPhase();
+      cleanupEval();
     };
   }, [refresh]);
 

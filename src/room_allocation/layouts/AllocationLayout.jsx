@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import TopNav from '../components/shared/TopNav';
+import { allocationSocket } from '../sockets/allocation.socket.js';
 
 /* ── Icons ────────────────────────────────────────────────────── */
 const GridIcon   = () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/></svg>;
@@ -44,7 +46,21 @@ export default function AllocationLayout({
   phase       = 'Selection Phase',
   batch       = 'Batch TBD',
   lockEnabled = false,
+  hostelId    = null,   // pass from page to enable socket room subscription
 }) {
+  // ── Socket lifecycle: connect once, disconnect on leave ──────
+  // Hooks (useLiveRooms, useAllocationState, useSquad) only call .on()/.off().
+  // They must NEVER call .connect() or .disconnect() themselves.
+  useEffect(() => {
+    allocationSocket.connect();
+    return () => allocationSocket.disconnect();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Join/switch hostel room whenever hostelId changes
+  useEffect(() => {
+    if (hostelId) allocationSocket.joinHostel(hostelId);
+  }, [hostelId]);
+
   return (
     <div className="flex flex-col min-h-screen bg-canvas">
       <TopNav liveStatus />
