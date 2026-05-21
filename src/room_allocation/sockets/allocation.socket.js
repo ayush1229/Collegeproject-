@@ -15,6 +15,7 @@
 import { io } from 'socket.io-client';
 import { WS_EVENTS } from './events.js';
 
+// Matches hostel_backend port. Override via VITE_WS_URL if needed.
 const WS_URL = import.meta.env.VITE_WS_URL ?? 'http://localhost:5000';
 
 class AllocationSocket {
