@@ -1,62 +1,204 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
+import { StrictMode } from "react";
 
-import App from './App.jsx'
-import Sample from './sample.jsx'
-import Complaint from './complaint/complaint.jsx'
-import Outpass from './outpass/outpass.jsx'
-import Outpass1 from './outpass/outpass_form.jsx'
-import Admin from './admin/admin.tsx'
-import Guard from './guard/guard.tsx'
-import Warden from './chief-warden/warden.tsx'
-import ComplaintForm from './complaint/ComplaintForm.jsx'
+import { createRoot } from "react-dom/client";
 
-// Room allocation pages
-import AllocationGatewayPage from './room_allocation/pages/AllocationGatewayPage'
-import SquadLobbyPage        from './room_allocation/pages/SquadLobbyPage'
-import WaitingRoomPage       from './room_allocation/pages/WaitingRoomPage'
-import LiveSelectionPage     from './room_allocation/pages/LiveSelectionPage'
-import SelectionLockedPage   from './room_allocation/pages/SelectionLockedPage'
-import AllocationResultsPage from './room_allocation/pages/AllocationResultsPage'
-import PenaltyPage           from './room_allocation/pages/PenaltyPage'
-import AllocationHistoryPage from './room_allocation/pages/AllocationHistoryPage'
-import Login from './auth/login.jsx'
-import Signup from './auth/signup.jsx'
-import Student from './student/student.jsx'
+import {
+  createBrowserRouter,
+  RouterProvider,
+  Navigate,
+} from "react-router-dom";
 
+import "./index.css";
 
-const router = createBrowserRouter([
-  // App routes
-  { path: '/',          element: <Login />       },
-  { path: '/sample',    element: <Sample />    },
-  { path: '/complaint', element: <Complaint /> },
-  { path: '/complaint-form', element: <ComplaintForm /> },
-  { path: '/outpass',   element: <Outpass />   },
-  { path: '/login',     element: <Login />     },
-  { path: '/signup',    element: <Signup />    },
-  { path: '/student',   element: <Student />   },
-  { path: '/apply-outpass', element: <Outpass1 /> },
-  { path: '/admin',     element: <Admin />     },
-  { path: '/guard',     element: <Guard />     },
-  {path:'/warden', element:<Warden />},
-  
+import App from "./App";
 
-  // Room allocation module
-  { path: '/allocation',                 element: <AllocationGatewayPage />              },
-  { path: '/allocation/squad',           element: <SquadLobbyPage hasGroup={true}  />    },
-  { path: '/allocation/squad-solo',      element: <SquadLobbyPage hasGroup={false} />    },
-  { path: '/allocation/waiting-room',    element: <WaitingRoomPage />                    },
-  { path: '/allocation/selection/live',  element: <LiveSelectionPage />                  },
-  { path: '/allocation/selection/locked',element: <SelectionLockedPage />                },
-  { path: '/allocation/results',         element: <AllocationResultsPage />              },
-  { path: '/allocation/penalty',         element: <PenaltyPage />                        },
-  { path: '/allocation/history',         element: <AllocationHistoryPage />              },
-]);
+/* ================= AUTH ================= */
 
-createRoot(document.getElementById('root')).render(
+import Signup from "./auth/Signup";
+
+/* ================= STUDENT ================= */
+
+import OutpassLayout from "./student/outpasses";
+
+/* ================= ATTENDANT ================= */
+
+import AdminLayout from "./attendant/AdminLayout";
+
+import PendingPage from "./attendant/PendingPage";
+
+import ApprovedPage from "./attendant/ApprovedPage";
+
+import RejectedPage from "./attendant/RejectedPage";
+
+/* ================= GUARD ================= */
+
+import GuardLayout from "./guard/GuardLayout";
+
+import Dashboard from "./guard/Dashboard";
+
+import ExitPage from "./guard/ExitPage";
+
+import ReturnPage from "./guard/ReturnPage";
+
+/* ================= ERROR PAGE ================= */
+
+function ErrorPage() {
+
+  return (
+
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
+
+      <div className="bg-white shadow-xl rounded-3xl p-10 text-center max-w-md w-full border">
+
+        <h1 className="text-6xl font-bold text-[#6d0f16]">
+
+          404
+
+        </h1>
+
+        <p className="text-xl font-semibold mt-4">
+
+          Page Not Found
+
+        </p>
+
+        <p className="text-gray-500 mt-2">
+
+          The page you are trying to access does not exist.
+
+        </p>
+
+        <button
+          onClick={() =>
+            window.location.href = "/"
+          }
+          className="mt-6 bg-[#6d0f16] hover:bg-[#530b11] text-white px-6 py-3 rounded-2xl transition"
+        >
+
+          Go Home
+
+        </button>
+
+      </div>
+
+    </div>
+  );
+}
+
+/* ================= ROUTES ================= */
+
+const router =
+  createBrowserRouter([
+
+    /* ROOT */
+
+    {
+      path: "/",
+      element: <App />,
+      errorElement: <ErrorPage />,
+    },
+
+    /* ================= SIGNUP ================= */
+
+    {
+      path: "/signup",
+      element: <Signup />,
+      errorElement: <ErrorPage />,
+    },
+
+    /* ================= STUDENT ================= */
+
+    {
+      path: "/student",
+      element: <OutpassLayout />,
+      errorElement: <ErrorPage />,
+    },
+
+    /* ================= ATTENDANT ================= */
+
+    {
+      path: "/attendant",
+      element: <AdminLayout />,
+      errorElement: <ErrorPage />,
+
+      children: [
+
+        {
+          index: true,
+          element: (
+            <Navigate to="pending" />
+          ),
+        },
+
+        {
+          path: "pending",
+          element: <PendingPage />,
+        },
+
+        {
+          path: "approved",
+          element: <ApprovedPage />,
+        },
+
+        {
+          path: "rejected",
+          element: <RejectedPage />,
+        },
+      ],
+    },
+
+    /* ================= GUARD ================= */
+
+    {
+      path: "/guard",
+      element: <GuardLayout />,
+      errorElement: <ErrorPage />,
+
+      children: [
+
+        {
+          index: true,
+          element: (
+            <Navigate to="dashboard" />
+          ),
+        },
+
+        {
+          path: "dashboard",
+          element: <Dashboard />,
+        },
+
+        {
+          path: "exit",
+          element: <ExitPage />,
+        },
+
+        {
+          path: "return",
+          element: <ReturnPage />,
+        },
+      ],
+    },
+
+    /* ================= FALLBACK ================= */
+
+    {
+      path: "*",
+      element: <ErrorPage />,
+    },
+  ]);
+
+/* ================= RENDER ================= */
+
+createRoot(
+  document.getElementById("root")
+).render(
+
   <StrictMode>
-    <RouterProvider router={router} />
-  </StrictMode>,
-)
+
+    <RouterProvider
+      router={router}
+    />
+
+  </StrictMode>
+);
