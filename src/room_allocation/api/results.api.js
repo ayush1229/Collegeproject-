@@ -1,24 +1,41 @@
-const delay = (ms = 300) => new Promise(r => setTimeout(r, ms));
+import { API_BASE_URL } from './config';
 
 export const getFinalAllocation = async () => {
-  await delay();
-  return {
-    status: 'ALLOCATED', // ALLOCATED | ROLLOVER | PENDING_MIGRATION
-    room: { id: 'C-312', block: 'C', floor: 3, type: '4-Seater', hostel: 'Block C Hostel' },
-    method: 'Preference Match',
-    round: 1,
-    batch: 'Batch #12',
-    allocatedAt: '2026-05-11T23:34:00Z',
-    roommates: [
-      { id: 2, name: 'Arjun Sharma', cgpa: 9.20, batch: 'BT-2024', initials: 'AS' },
-      { id: 3, name: 'Priya Mehta',  cgpa: 8.75, batch: 'BT-2024', initials: 'PM' },
-      { id: 4, name: 'Rohan Das',    cgpa: 9.10, batch: 'BT-2024', initials: 'RD' },
-    ],
-    moveInWindow: { start: '2026-05-15', end: '2026-05-20' },
-  };
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/allocation/status/3`);
+    const data = await res.json();
+    const result = data.result;
+
+    return {
+      status: result?.allotted ? 'ALLOCATED' : 'PENDING_MIGRATION',
+      room: result?.room ? {
+        id: result.room.room_number ?? result.room.id,
+        block: result.room.room_number?.split('_')[0] ?? 'Block A',
+        floor: 1,
+        type: result.room.room_type ?? '3-Seater',
+        hostel: result.room.hostel_id ?? 'Hostel Block',
+      } : null,
+      method: 'Preference Match',
+      round: 1,
+      batch: 'Batch #12',
+      allocatedAt: new Date().toISOString(),
+      roommates: [],
+      moveInWindow: { start: '2026-05-15', end: '2026-05-20' },
+    };
+  } catch {
+    return {
+      status: 'PENDING_MIGRATION',
+      room: null,
+      method: 'Preference Match',
+      round: 1,
+      batch: 'Batch #12',
+      allocatedAt: new Date().toISOString(),
+      roommates: [],
+      moveInWindow: { start: '2026-05-15', end: '2026-05-20' },
+    };
+  }
 };
 
 export const downloadAllotmentLetter = async () => {
-  await delay(500);
   return { url: '#' };
 };

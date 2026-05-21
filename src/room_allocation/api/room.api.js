@@ -1,22 +1,40 @@
-const delay = (ms = 300) => new Promise(r => setTimeout(r, ms));
+import { API_BASE_URL } from './config';
 
 export const getAvailableRooms = async () => {
-  await delay();
-  return [
-    { id: 'C-302', block: 'C', floor: 3, type: '4-Seater', total: 4, occupied: 2 },
-    { id: 'C-312', block: 'C', floor: 3, type: '4-Seater', total: 4, occupied: 0 },
-    { id: 'C-401', block: 'C', floor: 4, type: '2-Seater', total: 2, occupied: 1 },
-    { id: 'B-118', block: 'B', floor: 1, type: '2-Seater', total: 2, occupied: 0 },
-    { id: 'B-205', block: 'B', floor: 2, type: '4-Seater', total: 4, occupied: 3 },
-    { id: 'B-302', block: 'B', floor: 3, type: '4-Seater', total: 4, occupied: 1 },
-    { id: 'A-101', block: 'A', floor: 1, type: '2-Seater', total: 2, occupied: 2 },
-    { id: 'A-201', block: 'A', floor: 2, type: '4-Seater', total: 4, occupied: 0 },
-    { id: 'D-414', block: 'D', floor: 4, type: '4-Seater', total: 4, occupied: 2 },
-    { id: 'D-301', block: 'D', floor: 3, type: '2-Seater', total: 2, occupied: 0 },
-    { id: 'A-302', block: 'A', floor: 3, type: '4-Seater', total: 4, occupied: 4 },
-    { id: 'B-410', block: 'B', floor: 4, type: '2-Seater', total: 2, occupied: 0 },
-  ];
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/preferences/rooms`);
+    const data = await res.json();
+    return data.rooms.map(room => ({
+  id: room.id,
+  roomNumber: room.room_number,  // ye add karo
+  block: room.room_number?.split('_')[0] ?? 'N/A',
+  floor: 1,
+  type: room.room_type ?? '3-Seater',
+  total: room.max_capacity,
+  occupied: room.current_occupancy,
+}));
+  } catch {
+    return [];
+  }
 };
 
-export const getRoomDetails  = async (id) => { await delay(); return { id }; };
-export const getRoomOccupancy = async (id) => { await delay(); return { id, occupied: 2, total: 4 }; };
+export const getRoomDetails = async (id) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/preferences/rooms`);
+    const data = await res.json();
+    return data.rooms.find(r => r.id === id) ?? { id };
+  } catch {
+    return { id };
+  }
+};
+
+export const getRoomOccupancy = async (id) => {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/preferences/rooms`);
+    const data = await res.json();
+    const room = data.rooms.find(r => r.id === id);
+    return { id, occupied: room?.current_occupancy ?? 0, total: room?.max_capacity ?? 4 };
+  } catch {
+    return { id, occupied: 0, total: 4 };
+  }
+};
