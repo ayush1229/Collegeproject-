@@ -1,9 +1,54 @@
-const delay = (ms = 300) => new Promise(r => setTimeout(r, ms));
+/**
+ * api/squad.api.js — Group/Squad REST calls
+ *
+ * Maps frontend "squad" terminology to backend "group" endpoints.
+ * All functions return the unwrapped data (axios interceptor strips envelope).
+ *
+ * TODO: pass studentId / groupId from auth context once auth is wired.
+ */
+import client from './client.js';
 
-export const createSquad = async (name) => { await delay(); return { id: 's1', name }; };
-export const leaveSquad  = async ()     => { await delay(); return { success: true };  };
-export const transferLeadership = async (memberId) => { await delay(); return { newLeaderId: memberId }; };
-export const acceptInvite = async (inviteId) => { await delay(); return { success: true, inviteId }; };
-export const rejectInvite = async (inviteId) => { await delay(); return { success: true, inviteId }; };
-export const sendInvite   = async (userId)   => { await delay(); return { success: true, userId };   };
-export const removeMember = async (memberId) => { await delay(); return { success: true, memberId }; };
+/** Create a new squad. `primaryApplicantId` = current user's student ID. */
+export const createSquad = (primaryApplicantId) =>
+  client.post('/groups/create', { primaryApplicantId });
+
+/** Leave the current squad. */
+export const leaveSquad = (studentId) =>
+  client.post('/groups/leave', { studentId });
+
+/**
+ * Transfer leader title to another squad member.
+ * Blocked by backend if group is SOFT_LOCKED/HARD_LOCKED.
+ */
+export const transferLeadership = (groupId, newLeaderId) =>
+  client.post('/groups/transfer-leadership', { groupId, newLeaderId });
+
+/**
+ * Accept an incoming invite/request.
+ * Works during LOBBY (and SOFT_LOCK if group has < 4 members).
+ */
+export const acceptInvite = (requestId) =>
+  client.post('/groups/accept-invite', { requestId, status: 'ACCEPTED' });
+
+/** Reject an incoming invite/request. */
+export const rejectInvite = (requestId) =>
+  client.post('/groups/accept-invite', { requestId, status: 'REJECTED' });
+
+/**
+ * Send an invite to a student (leader → student: INVITE_FROM_PRIMARY)
+ * or a student applying to a group (APPLICATION_FROM_STUDENT).
+ */
+export const sendInvite = ({ groupId, studentId, requestType = 'INVITE_FROM_PRIMARY' }) =>
+  client.post('/groups/invite', { groupId, studentId, requestType });
+
+/** Get all pending group requests for a student or group. */
+export const getPendingRequests = () =>
+  client.get('/groups/requests');
+
+/** Get the members of a specific group. */
+export const getGroupMembers = (groupId) =>
+  client.get(`/groups/${groupId}/members`);
+
+/** Get all groups (used for browse/public squads view). */
+export const getAllGroups = () =>
+  client.get('/groups/');

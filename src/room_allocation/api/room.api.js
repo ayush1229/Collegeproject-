@@ -1,22 +1,57 @@
-const delay = (ms = 300) => new Promise(r => setTimeout(r, ms));
+/**
+ * api/room.api.js — Room data REST calls
+ *
+ * Backend shape:  { id, room_number, max_capacity, current_occupancy, hostel_id, room_type }
+ * Frontend shape: { id, block, floor, type, total, occupied }
+ *
+ * The normaliseRoom() adapter bridges the two.
+ */
+import client from './client.js';
 
-export const getAvailableRooms = async () => {
-  await delay();
-  return [
-    { id: 'C-302', block: 'C', floor: 3, type: '4-Seater', total: 4, occupied: 2 },
-    { id: 'C-312', block: 'C', floor: 3, type: '4-Seater', total: 4, occupied: 0 },
-    { id: 'C-401', block: 'C', floor: 4, type: '2-Seater', total: 2, occupied: 1 },
-    { id: 'B-118', block: 'B', floor: 1, type: '2-Seater', total: 2, occupied: 0 },
-    { id: 'B-205', block: 'B', floor: 2, type: '4-Seater', total: 4, occupied: 3 },
-    { id: 'B-302', block: 'B', floor: 3, type: '4-Seater', total: 4, occupied: 1 },
-    { id: 'A-101', block: 'A', floor: 1, type: '2-Seater', total: 2, occupied: 2 },
-    { id: 'A-201', block: 'A', floor: 2, type: '4-Seater', total: 4, occupied: 0 },
-    { id: 'D-414', block: 'D', floor: 4, type: '4-Seater', total: 4, occupied: 2 },
-    { id: 'D-301', block: 'D', floor: 3, type: '2-Seater', total: 2, occupied: 0 },
-    { id: 'A-302', block: 'A', floor: 3, type: '4-Seater', total: 4, occupied: 4 },
-    { id: 'B-410', block: 'B', floor: 4, type: '2-Seater', total: 2, occupied: 0 },
-  ];
+/**
+ * Parse block and floor from room_number, e.g. "C-302" → block:"C", floor:3.
+ * Falls back gracefully for non-standard formats.
+ */
+function normaliseRoom(r) {
+  const parts = (r.room_number ?? r.id ?? '').split('-');
+  const block  = parts[0] ?? '?';
+  const num    = parts[1] ?? '';
+  const floor  = num.length >= 1 ? parseInt(num[0], 10) : 0;
+
+  return {
+    id:       r.id,
+    roomNo:   r.room_number,
+    block,
+    floor,
+    type:     r.max_capacity === 4 ? '4-Seater'
+            : r.max_capacity === 3 ? '3-Seater'
+            : r.max_capacity === 2 ? '2-Seater'
+            :                        '1-Seater',
+    total:    r.max_capacity,
+    occupied: r.current_occupancy,
+  };
+}
+
+/**
+ * Fetch the live room map for a hostel (available rooms only).
+ * Called by useLiveRooms during LIVE_BATCHES phase.
+ */
+export const getAvailableRooms = async (hostelId) => {
+  const data = await client.get(`/allocation/rooms/${hostelId}`);
+  // Backend wraps: { success, rooms: [...] }
+  const rooms = data.rooms ?? data ?? [];
+  return rooms.map(normaliseRoom);
 };
 
-export const getRoomDetails  = async (id) => { await delay(); return { id }; };
-export const getRoomOccupancy = async (id) => { await delay(); return { id, occupied: 2, total: 4 }; };
+/** Get full details of one room. */
+export const getRoomDetails = async (id) => {
+  const data = await client.get(`/rooms/${id}`);
+  return normaliseRoom(data.room ?? data);
+};
+
+/** Get occupancy for one room (lightweight). */
+export const getRoomOccupancy = async (id) => {
+  const data = await client.get(`/rooms/${id}`);
+  const r = data.room ?? data;
+  return { id, occupied: r.current_occupancy, total: r.max_capacity };
+};
