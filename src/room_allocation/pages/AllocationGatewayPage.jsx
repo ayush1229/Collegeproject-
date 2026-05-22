@@ -1,84 +1,118 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAllocationState } from '../hooks/useAllocationState';
 import LoadingScreen from '../components/shared/LoadingScreen';
 import ErrorState from '../components/shared/ErrorState';
 import { ROUTES } from '../constants/routes';
 import AllocationLayout from '../layouts/AllocationLayout';
+import PreLobbyPage from './PreLobbyPage';
 
 function resolveRoute(state) {
-  if (state.isPenalized)     return ROUTES.PENALTY;
-  if (state.isAllocated)     return ROUTES.RESULTS;
-  if (state.submitted)       return ROUTES.LOCKED;
-  if (state.batchActive)     return ROUTES.LIVE;
-  if (state.waitingForBatch) return ROUTES.WAITING_ROOM;
-  if (state.hasSquad)        return ROUTES.SQUAD;
+  if (!state)                                       return null;
+  if (state.isPenalized)                            return ROUTES.PENALTY;
+  if (state.groupStatus === 'SHATTERED')            return ROUTES.SHATTERED;
+  if (state.isAllocated)                            return ROUTES.RESULTS;
+  if (state.submitted)                              return ROUTES.LOCKED;
+  if (state.batchActive)                            return ROUTES.LIVE;
+  if (state.waitingForBatch)                        return ROUTES.WAITING_ROOM;
+  if (state.hasSquad)                               return ROUTES.SQUAD;
   return ROUTES.SQUAD_SOLO;
 }
 
-/** Dev helper — links to every page for testing */
-const DEV_LINKS = [
-  { label: 'Squad Lobby (with group)',  to: ROUTES.SQUAD        },
-  { label: 'Squad Lobby (solo)',        to: ROUTES.SQUAD_SOLO   },
-  { label: 'Waiting Room',             to: ROUTES.WAITING_ROOM },
-  { label: 'Live Selection',           to: ROUTES.LIVE         },
-  { label: 'Selection Locked',         to: ROUTES.LOCKED       },
-  { label: 'Allocation Results',       to: ROUTES.RESULTS      },
-  { label: 'Penalty Page',             to: ROUTES.PENALTY      },
-  { label: 'Allocation History',       to: ROUTES.HISTORY      },
-];
-
 export default function AllocationGatewayPage() {
-  const { state, loading, error } = useAllocationState();
   const navigate = useNavigate();
+  const [redirecting, setRedirecting] = useState(false);
+  const [targetRoute, setTargetRoute] = useState(null);
 
-  // Auto-redirect removed for dev mode
-  // useEffect(() => {
-  //   if (!loading && !error && state) {
-  //     const target = resolveRoute(state);
-  //     const t = setTimeout(() => navigate(target, { replace: true }), 1800);
-  //     return () => clearTimeout(t);
-  //   }
-  // }, [state, loading, error, navigate]);
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const studentId = user ? user.id : null;
+
+  const { state, loading, error } = useAllocationState(studentId);
+
+  useEffect(() => {
+    if (!loading && !error && state) {
+      const phase = state.phase;
+
+      // Pre-lobby phases — don't redirect, show PreLobbyPage
+      if (phase === 'ADMIN_MODE') return;
+      if (phase === 'FINAL_SWEEP' && !state.isAllocated) return;
+
+      const target = resolveRoute(state);
+      if (!target) return;
+
+      // Brief animation then redirect
+      setTargetRoute(target);
+      setRedirecting(true);
+      const t = setTimeout(() => navigate(target, { replace: true }), 1500);
+      return () => clearTimeout(t);
+    }
+  }, [state, loading, error, navigate]);
+
+  if (!studentId) {
+    return (
+      <AllocationLayout>
+        <ErrorState
+          title="Authentication Required"
+          message="No active student session found. Please login first."
+          onRetry={() => navigate('/')}
+        />
+      </AllocationLayout>
+    );
+  }
 
   if (loading) return <LoadingScreen label="Checking your allocation status…" />;
 
   if (error) {
     return (
       <AllocationLayout>
-        <ErrorState title="Could not load allocation state" message={error.message} onRetry={() => window.location.reload()} />
+        <ErrorState
+          title="Could not load allocation state"
+          message={error.message}
+          onRetry={() => window.location.reload()}
+        />
       </AllocationLayout>
     );
   }
 
-  return (
-    <AllocationLayout>
-      <div className="max-w-xl mx-auto pt-10 flex flex-col gap-6">
-        <div className="flex flex-col gap-1.5">
-          <p className="text-[11px] font-bold tracking-[0.1em] text-crimson">ALLOCATION GATEWAY</p>
-          <h1 className="text-[22px] font-black text-text-primary tracking-tight">Routing you to the right page…</h1>
-          <p className="text-[13px] text-text-secondary">
-            Detected state: <strong>{resolveRoute(state)}</strong>
-          </p>
-        </div>
+  // Pre-lobby: allocation not yet scheduled
+  if (state && state.phase === 'ADMIN_MODE') {
+    return (
+      <PreLobbyPage
+        allocationDate={state.allocationDate}
+        lobbyOpensAt={state.lobbyOpensAt}
+      />
+    );
+  }
 
-        {/* Dev nav */}
-        <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
-          <div className="px-4 py-3 border-b border-border bg-amber-50">
-            <p className="text-[10.5px] font-bold tracking-[0.1em] text-amber-700">DEV MODE — JUMP TO PAGE</p>
+  // Redirecting animation
+  if (redirecting && targetRoute) {
+    return (
+      <AllocationLayout>
+        <div className="max-w-xl mx-auto pt-20 flex flex-col items-center gap-6">
+          <div className="flex gap-2">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="w-2.5 h-2.5 rounded-full bg-crimson animate-bounce"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
           </div>
-          {DEV_LINKS.map(({ label, to }) => (
-            <button
-              key={to}
-              onClick={() => navigate(to)}
-              className="w-full flex items-center justify-between px-4 py-3 border-b border-border last:border-0 hover:bg-canvas text-left transition-colors cursor-pointer border-0 bg-transparent"
-            >
-              <span className="text-[13px] font-medium text-text-primary">{label}</span>
-              <span className="text-[11px] text-text-muted font-mono">{to}</span>
-            </button>
-          ))}
+          <div className="text-center">
+            <p className="text-[11px] font-bold tracking-[0.1em] text-crimson">ALLOCATION GATEWAY</p>
+            <h1 className="text-[20px] font-black text-text-primary tracking-tight mt-1">
+              Routing you to the right page…
+            </h1>
+            <p className="text-[13px] text-text-secondary mt-1">
+              Taking you to <strong>{targetRoute}</strong>
+            </p>
+          </div>
         </div>
-      </div>
-    </AllocationLayout>
-  );
+      </AllocationLayout>
+    );
+  }
+
+  // Fallback (should not normally be reached)
+  return <LoadingScreen label="Setting up your allocation portal…" />;
 }

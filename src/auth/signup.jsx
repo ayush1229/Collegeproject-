@@ -1,9 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 function Signup() {
 
   const navigate = useNavigate();
+
+  const [hostels, setHostels] = useState([]);
+
+  useEffect(() => {
+    async function fetchHostels() {
+      try {
+        const response = await fetch("http://localhost:5000/api/hostels");
+        const data = await response.json();
+        if (data.success && data.hostels) {
+          setHostels(data.hostels);
+        }
+      } catch (err) {
+        console.error("Failed to fetch hostels:", err);
+      }
+    }
+    fetchHostels();
+  }, []);
 
   const [formData, setFormData] =
     useState({
@@ -19,8 +36,6 @@ function Signup() {
       phone: "",
 
       hostel: "",
-
-      room: "",
 
       department: "",
 
@@ -63,7 +78,6 @@ function Signup() {
         !formData.confirmPassword ||
         !formData.phone ||
         !formData.hostel ||
-        !formData.room ||
         !formData.department ||
         !formData.rollno
       ) {
@@ -156,8 +170,6 @@ function Signup() {
           hostel:
             formData.hostel,
 
-          room: formData.room,
-
           department:
             formData.department,
 
@@ -212,7 +224,7 @@ function Signup() {
       /* ================= API ================= */
 
       const response = await fetch(
-        "http://localhost:4000/auth/signup",
+        "http://localhost:5000/auth/signup",
         {
           method: "POST",
 
@@ -235,6 +247,7 @@ function Signup() {
       if (!response.ok) {
 
         setError(
+          data.detail ||
           data.message ||
           "Signup failed"
         );
@@ -447,15 +460,6 @@ function Signup() {
                 className="w-full border border-gray-300 p-3 rounded-md mb-4 outline-none focus:border-[#5b0e0e]"
               />
 
-              <input
-                type="text"
-                name="room"
-                placeholder="Room Number"
-                value={formData.room}
-                onChange={handleChange}
-                className="w-full border border-gray-300 p-3 rounded-md mb-4 outline-none focus:border-[#5b0e0e]"
-              />
-
             </>
           )}
 
@@ -474,21 +478,11 @@ function Signup() {
                 Select Hostel
               </option>
 
-              <option value="KBH">
-                KBH
-              </option>
-
-              <option value="Hostel B">
-                Hostel B
-              </option>
-
-              <option value="Hostel C">
-                Hostel C
-              </option>
-
-              <option value="Hostel D">
-                Hostel D
-              </option>
+              {hostels.map(h => (
+                <option key={h.id} value={h.name}>
+                  {h.name}
+                </option>
+              ))}
 
             </select>
           )}

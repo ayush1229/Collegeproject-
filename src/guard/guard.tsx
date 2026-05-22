@@ -38,7 +38,7 @@ function Guard() {
     const fetchOutpasses = async () => {
       try {
         // Updated URL to match your Express router setup
-        const response = await fetch('http://localhost:4000/outpass/all-approved', {
+        const response = await fetch('http://localhost:5000/outpass/all-approved', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'role': 'guard'
@@ -66,7 +66,7 @@ function Guard() {
 
     try {
       // Updated URL
-      const response = await fetch('http://localhost:4000/outpass/record-entry', {
+      const response = await fetch('http://localhost:5000/outpass/record-entry', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -97,7 +97,7 @@ function Guard() {
 
     try {
       // Updated URL
-      const response = await fetch('http://localhost:4000/outpass/record-entry', {
+      const response = await fetch('http://localhost:5000/outpass/record-entry', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

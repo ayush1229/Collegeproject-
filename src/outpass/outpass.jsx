@@ -19,7 +19,7 @@ function Outpass() {
       }
 
       try {
-        const response = await fetch('http://localhost:4000/outpass/my-outpasses', {
+        const response = await fetch('http://localhost:5000/outpass/my-outpasses', {
           method: 'GET',
           headers: {
             Authorization: `Bearer ${storedUser.token}`,

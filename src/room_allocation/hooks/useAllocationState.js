@@ -43,12 +43,37 @@ export function useAllocationState(studentId) {
 
     // Re-fetch on any event that changes phase or batch state
     useEffect(() => {
-        // Register a handler for each event, collect their cleanup functions
-        const cleanups = REFETCH_EVENTS.map((evt) =>
-            allocationSocket.on(evt, fetch)
-        );
+        const cleanups = REFETCH_EVENTS.map((evt) => {
+            const handler = (payload) => {
+                if (evt === WS_EVENTS.PHASE_CHANGED) {
+                    console.log(`[Frontend] Detected phase change via WebSocket! New Phase: ${payload.phase}`);
+                    // Instantly update the UI based on the payload (Optimistic update)
+                    setState(prev => {
+                        if (!prev) return prev;
+                        let newGroupStatus = prev.groupStatus;
+                        if (payload.phase === 'SOFT_LOCK' && prev.hasSquad) newGroupStatus = 'SOFT_LOCKED';
+                        else if (payload.phase === 'LIVE_BATCHES' && prev.hasSquad) newGroupStatus = 'HARD_LOCKED';
+                        else if (payload.phase === 'LOBBY') newGroupStatus = 'FORMING';
+                        
+                        return { ...prev, phase: payload.phase, groupStatus: newGroupStatus };
+                    });
+                }
+                // Still fetch in background to sync heavy data (e.g. batch numbers)
+                fetch();
+            };
+            return allocationSocket.on(evt, handler);
+        });
         return () => cleanups.forEach((cleanup) => cleanup());
     }, [fetch]);
+
+    // Join the hostel WebSocket room as soon as we have a hostelId.
+    // This ensures ALL pages receive live events without needing to thread
+    // hostelId as a prop through AllocationLayout.
+    useEffect(() => {
+        if (state?.hostelId) {
+            allocationSocket.joinHostel(state.hostelId);
+        }
+    }, [state?.hostelId]);
 
     return { state, loading, error, refresh: fetch };
 }

@@ -29,7 +29,7 @@ function Complaint() {
 
         const user = JSON.parse(userStr);
 
-        const response = await fetch('http://localhost:4000/complaint/my-complaints', {
+        const response = await fetch('http://localhost:5000/complaint/my-complaints', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -67,7 +67,7 @@ function Complaint() {
         c.id === complaintId ? { ...c, upvotes: (c.upvotes || 0) + 1 } : c
       ));
 
-      const response = await fetch('http://localhost:4000/complaint/upvote', {
+      const response = await fetch('http://localhost:5000/complaint/upvote', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

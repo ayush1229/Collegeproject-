@@ -74,7 +74,7 @@ function Login() {
       try {
 
         const response = await fetch(
-          "http://localhost:4000/auth/login",
+          "http://localhost:5000/auth/login",
           {
             method: "GET",
 
@@ -152,7 +152,7 @@ function Login() {
       setError("");
 
       const response = await fetch(
-        "http://localhost:4000/auth/login",
+        "http://localhost:5000/auth/login",
         {
           method: "POST",
 
@@ -183,6 +183,7 @@ function Login() {
       if (!response.ok) {
 
         setError(
+          data.detail ||
           data.message ||
           "Login failed"
         );

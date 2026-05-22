@@ -53,7 +53,7 @@ function Admin() {
 
       try {
         // Fetch attendant data
-        const userResponse = await fetch('http://localhost:4000/auth/me', {
+        const userResponse = await fetch('http://localhost:5000/auth/me', {
           method: 'GET',
           headers: {
             Authorization: `Bearer ${storedUser.token}`,
@@ -79,7 +79,7 @@ function Admin() {
 
         // Fetch outpasses filtered by hostel
         const outpassResponse = await fetch(
-          `http://localhost:4000/outpass/by-hostel?hostel=${encodeURIComponent(attendant.hostel)}`,
+          `http://localhost:5000/outpass/by-hostel?hostel=${encodeURIComponent(attendant.hostel)}`,
           {
             method: 'GET',
             headers: {
@@ -96,7 +96,7 @@ function Admin() {
 
         // Fetch complaints filtered by hostel
         const complaintResponse = await fetch(
-          `http://localhost:4000/complaint/by-hostel?hostel=${encodeURIComponent(attendant.hostel)}`,
+          `http://localhost:5000/complaint/by-hostel?hostel=${encodeURIComponent(attendant.hostel)}`,
           {
             method: 'GET',
             headers: {
@@ -134,7 +134,7 @@ function Admin() {
     
     const storedUser = JSON.parse(userStr);
     try {
-      const response = await fetch('http://localhost:4000/outpass/update-outpass', {
+      const response = await fetch('http://localhost:5000/outpass/update-outpass', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -161,7 +161,7 @@ function Admin() {
     
     const storedUser = JSON.parse(userStr);
     try {
-      const response = await fetch('http://localhost:4000/outpass/update-outpass', {
+      const response = await fetch('http://localhost:5000/outpass/update-outpass', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -188,7 +188,7 @@ function Admin() {
     
     const storedUser = JSON.parse(userStr);
     try {
-      const response = await fetch('http://localhost:4000/outpass/update-complaint', {
+      const response = await fetch('http://localhost:5000/outpass/update-complaint', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

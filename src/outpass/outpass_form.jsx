@@ -67,7 +67,7 @@ function Outpass1() {
         room: studentInfo.room,
       };
 
-      const response = await fetch("http://localhost:4000/outpass/apply", {
+      const response = await fetch("http://localhost:5000/outpass/apply", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -41,7 +41,7 @@ function ComplaintForm() {
     const user = JSON.parse(userStr);
 
     try {
-      const response = await fetch('http://localhost:4000/complaint/postcomplaint', {
+      const response = await fetch('http://localhost:5000/complaint/postcomplaint', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -7,5 +7,6 @@ export const ROUTES = {
   LOCKED:       '/allocation/selection/locked',
   RESULTS:      '/allocation/results',
   PENALTY:      '/allocation/penalty',
+  SHATTERED:    '/allocation/shattered',
   HISTORY:      '/allocation/history',
 };

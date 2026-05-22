@@ -43,7 +43,7 @@ function Warden() {
     const fetchOutpasses = async () => {
       try {
         // No headers needed since we removed 'auth' from the backend
-        const response = await fetch('http://localhost:4000/outpass/monitor');
+        const response = await fetch('http://localhost:5000/outpass/monitor');
         
         if (!response.ok) throw new Error('Failed to fetch outpasses');
         

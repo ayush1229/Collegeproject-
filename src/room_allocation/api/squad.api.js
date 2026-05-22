@@ -8,9 +8,9 @@
  */
 import client from './client.js';
 
-/** Create a new squad. `primaryApplicantId` = current user's student ID. */
-export const createSquad = (primaryApplicantId) =>
-  client.post('/groups/create', { primaryApplicantId });
+/** Create a new squad. `leaderId` = current user's student ID. */
+export const createSquad = (studentId) =>
+  client.post('/groups/create', { leaderId: studentId });
 
 /** Leave the current squad. */
 export const leaveSquad = (studentId) =>
@@ -22,6 +22,10 @@ export const leaveSquad = (studentId) =>
  */
 export const transferLeadership = (groupId, newLeaderId) =>
   client.post('/groups/transfer-leadership', { groupId, newLeaderId });
+
+/** Kick a member from the group. */
+export const kickMember = (groupId, leaderId, memberId) =>
+  client.post('/groups/kick', { groupId, leaderId, memberId });
 
 /**
  * Accept an incoming invite/request.
@@ -52,3 +56,17 @@ export const getGroupMembers = (groupId) =>
 /** Get all groups (used for browse/public squads view). */
 export const getAllGroups = () =>
   client.get('/groups/');
+
+// Search students by name or roll number (no cgpa/rank exposed)
+export const searchStudents = (q) => {
+  if (!q || q.length < 2) return Promise.resolve({ students: [] });
+  return client.get(`/students/search?q=${encodeURIComponent(q)}`);
+};
+
+// Get group members with cgpa (for group members only)
+export const getGroupMembersWithCgpa = (groupId) =>
+  client.get(`/students/group-members/${groupId}`);
+
+// Dev tool: Add bot to squad
+export const addBotToSquad = (groupId) =>
+  client.post(`/allocation/dev/add-bot`, { groupId });

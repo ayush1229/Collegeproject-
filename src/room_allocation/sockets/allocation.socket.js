@@ -21,26 +21,13 @@ const WS_URL = import.meta.env.VITE_WS_URL ?? 'http://localhost:5000';
 
 class AllocationSocket {
     constructor() {
-        this._socket    = null;
-        this._hostelId  = null;
-    }
-
-    // ── Lifecycle (called by AllocationLayout only) ───────────────
-
-    /**
-     * Connect to the backend Socket.IO server.
-     * Safe to call once on layout mount. Does nothing if already connected.
-     */
-    connect() {
-        if (this._socket) return this; // already connected or connecting
-
         this._socket = io(WS_URL, {
             transports:          ['websocket', 'polling'],
             reconnectionAttempts: 10,
             reconnectionDelay:    2000,
-            // TODO: add auth token once auth is implemented
-            // auth: { token: getToken() }
+            autoConnect:          false // Wait for AllocationLayout to connect
         });
+        this._hostelId  = null;
 
         this._socket.on('connect', () => {
             console.info('[AllocationSocket] Connected:', this._socket.id);
@@ -58,7 +45,18 @@ class AllocationSocket {
         this._socket.on('disconnect', (reason) => {
             console.info('[AllocationSocket] Disconnected:', reason);
         });
+    }
 
+    // ── Lifecycle (called by AllocationLayout only) ───────────────
+
+    /**
+     * Connect to the backend Socket.IO server.
+     * Safe to call once on layout mount. Does nothing if already connected.
+     */
+    connect() {
+        if (!this._socket.connected) {
+            this._socket.connect();
+        }
         return this;
     }
 
@@ -90,11 +88,8 @@ class AllocationSocket {
      * Disconnect cleanly. Called only by AllocationLayout on unmount.
      */
     disconnect() {
-        if (this._socket) {
-            this._socket.removeAllListeners();
+        if (this._socket && this._socket.connected) {
             this._socket.disconnect();
-            this._socket   = null;
-            this._hostelId = null;
         }
     }
 

@@ -6,11 +6,13 @@ import {
   createBrowserRouter,
   RouterProvider,
   Navigate,
+  createRoutesFromElements,
 } from "react-router-dom";
 
 import "./index.css";
 
 import App from "./App";
+import { AllocationRoutes } from "./room_allocation";
 
 /* ================= AUTH ================= */
 
@@ -179,6 +181,8 @@ const router =
         },
       ],
     },
+
+    ...createRoutesFromElements(<>{AllocationRoutes}</>),
 
     /* ================= FALLBACK ================= */
 
