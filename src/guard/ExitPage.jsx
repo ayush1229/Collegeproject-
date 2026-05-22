@@ -4,6 +4,10 @@ import React, {
   useState,
 } from "react";
 
+import {
+  apiFetch,
+} from "../utils/api";
+
 export default function ExitPage() {
 
   const [logs, setLogs] =
@@ -34,54 +38,32 @@ export default function ExitPage() {
 
       setError("");
 
-      const token =
-        localStorage.getItem("token");
-
-      const role =
-        localStorage.getItem("role");
-
-      const response = await fetch(
-        "http://localhost:5000/api/students/status",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-
-            token,
-            role,
-          },
-
-          body: JSON.stringify({
-            outp_status:
-              "Approved",
-          }),
-        }
-      );
-
       const result =
-        await response.json();
+        await apiFetch(
+          "/api/students/status",
+          {
+            method: "POST",
+
+            body: JSON.stringify({
+              outp_status:
+                "Approved",
+            }),
+          }
+        );
 
       console.log(result);
 
-      if (!response.ok) {
-
-        throw new Error(
-          result.message ||
-          "Failed to fetch approved students"
-        );
-      }
-
       setLogs(
-        result.data || []
+        result?.data || []
       );
 
     } catch (err) {
 
       console.log(err);
 
-      setError(err.message);
+      setError(
+        err.message
+      );
 
     } finally {
 
@@ -101,44 +83,20 @@ export default function ExitPage() {
 
     try {
 
-      const token =
-        localStorage.getItem("token");
-
-      const role =
-        localStorage.getItem("role");
-
-      const response = await fetch(
-        "http://localhost:5000/api/outpasses/record-entry",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-
-            token,
-            role,
-          },
-
-          body: JSON.stringify({
-            outpass_id: id,
-            action: "exit",
-          }),
-        }
-      );
-
       const result =
-        await response.json();
+        await apiFetch(
+          "/api/outpasses/record-entry",
+          {
+            method: "POST",
+
+            body: JSON.stringify({
+              outpass_id: id,
+              action: "exit",
+            }),
+          }
+        );
 
       console.log(result);
-
-      if (!response.ok) {
-
-        throw new Error(
-          result.message ||
-          "Failed to mark exit"
-        );
-      }
 
       fetchApproved();
 
@@ -146,7 +104,9 @@ export default function ExitPage() {
 
       console.log(err);
 
-      alert(err.message);
+      alert(
+        err.message
+      );
     }
   }
 
@@ -161,12 +121,15 @@ export default function ExitPage() {
           o.outp_status !==
           "Approved"
         ) {
+
           return false;
         }
 
         if (
-          o.std_status === "Out"
+          o.std_status ===
+          "Out"
         ) {
+
           return false;
         }
 
@@ -177,11 +140,15 @@ export default function ExitPage() {
 
           o.name
             ?.toLowerCase()
-            .includes(q) ||
+            .includes(q)
+
+          ||
 
           o.roll_no
             ?.toLowerCase()
-            .includes(q) ||
+            .includes(q)
+
+          ||
 
           o.room
             ?.toLowerCase()
@@ -189,7 +156,9 @@ export default function ExitPage() {
 
         const matchHostel =
 
-          hostel === "All" ||
+          hostel === "All"
+
+          ||
 
           o.hostel === hostel;
 
@@ -227,6 +196,8 @@ export default function ExitPage() {
       sort,
     ]);
 
+  /* ================= LOADING ================= */
+
   if (loading) {
 
     return (
@@ -238,6 +209,8 @@ export default function ExitPage() {
       </div>
     );
   }
+
+  /* ================= ERROR ================= */
 
   if (error) {
 
@@ -255,7 +228,7 @@ export default function ExitPage() {
 
     <div className="space-y-6">
 
-      {/* HEADER */}
+      {/* ================= HEADER ================= */}
 
       <div>
 
@@ -273,7 +246,7 @@ export default function ExitPage() {
 
       </div>
 
-      {/* FILTER BAR */}
+      {/* ================= FILTER BAR ================= */}
 
       <div className="bg-white border rounded-2xl p-4 flex flex-wrap gap-3">
 
@@ -299,7 +272,9 @@ export default function ExitPage() {
         >
 
           <option value="All">
+
             All Hostels
+
           </option>
 
           {[...new Set(
@@ -331,18 +306,22 @@ export default function ExitPage() {
         >
 
           <option value="LATEST">
+
             Latest First
+
           </option>
 
           <option value="OLDEST">
+
             Oldest First
+
           </option>
 
         </select>
 
       </div>
 
-      {/* EMPTY */}
+      {/* ================= EMPTY ================= */}
 
       {filtered.length === 0 && (
 
@@ -353,7 +332,7 @@ export default function ExitPage() {
         </div>
       )}
 
-      {/* LIST */}
+      {/* ================= LIST ================= */}
 
       <div className="space-y-5">
 
@@ -365,6 +344,8 @@ export default function ExitPage() {
           >
 
             <div className="flex justify-between flex-wrap gap-5">
+
+              {/* LEFT */}
 
               <div className="flex-1">
 
@@ -386,7 +367,7 @@ export default function ExitPage() {
 
                 <p className="text-sm text-gray-500 mt-1">
 
-                  {o.roll_no}
+                  {o.roll_no || "No Roll No"}
                   {" • "}
                   {o.department}
 
@@ -424,6 +405,8 @@ export default function ExitPage() {
                 </div>
 
               </div>
+
+              {/* RIGHT */}
 
               <div className="min-w-[260px] space-y-4">
 

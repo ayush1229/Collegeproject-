@@ -1,13 +1,50 @@
-import React, { useState } from "react";
+import React from "react";
 
-import PendingPage from "./PendingPage";
-import ApprovedPage from "./ApprovedPage";
-import RejectedPage from "./RejectedPage";
+import {
+  NavLink,
+  Outlet,
+  useLocation,
+} from "react-router-dom";
 
 export default function AdminLayout() {
 
-  const [active, setActive] =
-    useState("pending");
+  const location =
+    useLocation();
+
+  /* ================= LOGOUT ================= */
+
+  function handleLogout() {
+
+    localStorage.clear();
+
+    window.location.href =
+      "/signin";
+  }
+
+  /* ================= PAGE TITLE ================= */
+
+  function getTitle() {
+
+    if (
+      location.pathname.includes(
+        "/approved"
+      )
+    ) {
+
+      return "Approved Outpasses";
+    }
+
+    if (
+      location.pathname.includes(
+        "/rejected"
+      )
+    ) {
+
+      return "Rejected Outpasses";
+    }
+
+    return "Pending Outpasses";
+  }
 
   return (
 
@@ -27,9 +64,9 @@ export default function AdminLayout() {
 
           </h1>
 
-          <p className="text-white/70 mt-2 text-sm">
+          <p className="text-white/70 mt-2 text-sm leading-relaxed">
 
-            Outpass Management System
+            Hostel Exit & Outpass Management System
 
           </p>
 
@@ -40,64 +77,69 @@ export default function AdminLayout() {
         <nav className="flex-1 p-5 space-y-3">
 
           <NavItem
+            to="/attendant/pending"
             title="Pending Outpasses"
-            active={active === "pending"}
-            onClick={() =>
-              setActive("pending")
-            }
+            icon="⏳"
           />
 
           <NavItem
+            to="/attendant/approved"
             title="Approved Outpasses"
-            active={active === "approved"}
-            onClick={() =>
-              setActive("approved")
-            }
+            icon="✅"
           />
 
           <NavItem
+            to="/attendant/rejected"
             title="Rejected Outpasses"
-            active={active === "rejected"}
-            onClick={() =>
-              setActive("rejected")
-            }
+            icon="❌"
           />
 
         </nav>
 
         {/* QUICK RULES */}
 
-        <div className="p-5">
+        <div className="p-5 space-y-4 border-t border-white/10">
 
           <div className="bg-white/10 rounded-2xl p-5 border border-white/10">
 
-            <h3 className="font-semibold mb-3">
+            <h3 className="font-semibold mb-3 text-lg">
 
               Quick Rules
 
             </h3>
 
-            <ul className="space-y-2 text-sm text-white/80 list-disc pl-4">
+            <ul className="space-y-2 text-sm text-white/80 list-disc pl-4 leading-relaxed">
 
               <li>
-                Verify student details
+                Verify student details carefully
               </li>
 
               <li>
-                Approve only valid requests
+                Approve only genuine requests
               </li>
 
               <li>
-                Home pass needs strict check
+                Home passes require strict validation
               </li>
 
               <li>
-                Ensure hostel discipline
+                Ensure hostel discipline is maintained
               </li>
 
             </ul>
 
           </div>
+
+          {/* LOGOUT */}
+
+          <button
+            onClick={handleLogout}
+            className="w-full bg-white text-[#6d0f16] font-semibold py-3 rounded-2xl hover:bg-gray-100 transition-all duration-200 shadow"
+          >
+
+            Logout
+
+          </button>
 
         </div>
 
@@ -109,44 +151,47 @@ export default function AdminLayout() {
 
         {/* PAGE HEADER */}
 
-        <div className="mb-8">
+        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
-          <h2 className="text-3xl font-bold text-gray-800">
+          <div>
 
-            {active === "pending" &&
-              "Pending Outpasses"}
+            <h2 className="text-4xl font-bold text-[#6d0f16]">
 
-            {active === "approved" &&
-              "Approved Outpasses"}
+              {getTitle()}
 
-            {active === "rejected" &&
-              "Rejected Outpasses"}
+            </h2>
 
-          </h2>
+            <p className="text-gray-500 mt-2 text-lg">
 
-          <p className="text-gray-500 mt-2">
+              Manage hostel outpass requests efficiently.
 
-            Manage hostel outpass requests efficiently.
+            </p>
 
-          </p>
+          </div>
+
+          <div className="bg-white border border-gray-200 shadow-sm rounded-3xl px-6 py-5 min-w-[180px]">
+
+            <p className="text-sm text-gray-500">
+
+              Active Section
+
+            </p>
+
+            <p className="text-2xl font-bold text-[#6d0f16] mt-1">
+
+              {getTitle()}
+
+            </p>
+
+          </div>
 
         </div>
 
         {/* ================= CONTENT ================= */}
 
-        <div className="bg-white rounded-3xl shadow-sm border border-gray-200 min-h-[80vh] overflow-hidden">
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-200 min-h-[80vh] overflow-hidden p-6">
 
-          {active === "pending" && (
-            <PendingPage />
-          )}
-
-          {active === "approved" && (
-            <ApprovedPage />
-          )}
-
-          {active === "rejected" && (
-            <RejectedPage />
-          )}
+          <Outlet />
 
         </div>
 
@@ -159,25 +204,40 @@ export default function AdminLayout() {
 /* ================= NAV ITEM ================= */
 
 function NavItem({
+  to,
   title,
-  active,
-  onClick,
+  icon,
 }) {
 
   return (
 
-    <button
-      onClick={onClick}
-      className={`w-full text-left px-5 py-4 rounded-2xl transition-all duration-200 font-medium text-lg
-      ${
-        active
-          ? "bg-white text-[#6d0f16] shadow-lg"
-          : "hover:bg-white/10 text-white"
-      }`}
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+
+        `flex items-center gap-3 w-full px-5 py-4 rounded-2xl transition-all duration-200 font-medium text-lg
+        ${
+          isActive
+
+            ? "bg-white text-[#6d0f16] shadow-lg"
+
+            : "hover:bg-white/10 text-white"
+        }`
+      }
     >
 
-      {title}
+      <span className="text-xl">
 
-    </button>
+        {icon}
+
+      </span>
+
+      <span>
+
+        {title}
+
+      </span>
+
+    </NavLink>
   );
 }

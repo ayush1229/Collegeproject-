@@ -10,7 +10,8 @@ export default function DetailCard({
   /* ================= TYPE ================= */
 
   const normalizedType =
-    type?.toLowerCase();
+    String(type || "")
+      .toLowerCase();
 
   const isLocal =
     normalizedType === "local";
@@ -65,7 +66,8 @@ export default function DetailCard({
     field === "status";
 
   const status =
-    value?.toLowerCase();
+    String(value || "")
+      .toLowerCase();
 
   const statusStyle =
     status === "approved"
@@ -81,7 +83,9 @@ export default function DetailCard({
 
   return (
 
-    <div className="bg-gray-50 border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow transition">
+    <div className="bg-gray-50 border border-gray-200 p-4 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200">
+
+      {/* LABEL */}
 
       <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">
 
@@ -89,10 +93,12 @@ export default function DetailCard({
 
       </p>
 
+      {/* STATUS */}
+
       {isStatus ? (
 
         <span
-          className={`px-3 py-1 rounded-full text-xs font-semibold ${statusStyle}`}
+          className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${statusStyle}`}
         >
 
           {value}
@@ -101,12 +107,40 @@ export default function DetailCard({
 
       ) : (
 
-        <p className="font-semibold text-sm text-gray-800 break-words">
+        <p className="font-semibold text-sm text-gray-800 break-words leading-relaxed">
 
           {formattedValue || "-"}
 
         </p>
 
+      )}
+
+      {/* TYPE BADGE */}
+
+      {field === "type" && (
+
+        <div className="mt-3">
+
+          <span
+            className={`inline-flex px-3 py-1 rounded-full text-xs font-medium
+            ${
+              isLocal
+
+                ? "bg-blue-100 text-blue-700"
+
+                : isOutstation
+
+                ? "bg-purple-100 text-purple-700"
+
+                : "bg-gray-100 text-gray-700"
+            }`}
+          >
+
+            {value}
+
+          </span>
+
+        </div>
       )}
 
     </div>

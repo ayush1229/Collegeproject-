@@ -4,6 +4,10 @@ import {
   useState,
 } from "react";
 
+import {
+  apiFetch,
+} from "../utils/api";
+
 function formatDate(date) {
 
   if (!date) return "-";
@@ -52,64 +56,22 @@ export default function Dashboard() {
 
       setLoading(true);
 
-      const token =
-        localStorage.getItem("token");
-
-      const role =
-        localStorage.getItem("role");
-
-      if (!token || !role) {
-
-        localStorage.clear();
-
-        window.location.href = "/";
-
-        return;
-      }
-
-      const response =
-        await fetch(
-          "http://localhost:5000/api/outpasses/monitor",
-          {
-            headers: {
-              token,
-              role,
-            },
-          }
-        );
-
       const result =
-        await response.json();
-
-      if (!response.ok) {
-
-        if (
-          result.message ===
-            "Please login first" ||
-
-          result.message ===
-            "Unauthorized"
-        ) {
-
-          localStorage.clear();
-
-          window.location.href = "/";
-        }
-
-        throw new Error(
-          result.message
+        await apiFetch(
+          "/api/outpasses/monitor"
         );
-      }
 
       setData(
-        result.data || []
+        result?.data || []
       );
 
     } catch (err) {
 
       console.log(err);
 
-      setError(err.message);
+      setError(
+        err.message
+      );
 
     } finally {
 
@@ -267,15 +229,21 @@ export default function Dashboard() {
         >
 
           <option value="All">
+
             All
+
           </option>
 
           <option value="In">
+
             In
+
           </option>
 
           <option value="Out">
+
             Out
+
           </option>
 
         </select>
@@ -291,11 +259,15 @@ export default function Dashboard() {
         >
 
           <option value="LATEST">
+
             Latest First
+
           </option>
 
           <option value="OLDEST">
+
             Oldest First
+
           </option>
 
         </select>
@@ -345,7 +317,7 @@ export default function Dashboard() {
 
               <p className="mt-3 text-gray-600 font-medium">
 
-                {o.roll_no}
+                {o.roll_no || "No Roll Number"}
                 {" • "}
                 {o.department}
 

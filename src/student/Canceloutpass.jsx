@@ -1,5 +1,9 @@
 import { useState } from "react";
 
+import {
+  apiFetch,
+} from "../utils/api";
+
 export default function CancelOutpass({
   outpasses,
   setOutpasses,
@@ -46,43 +50,15 @@ export default function CancelOutpass({
 
       setError("");
 
-      const token =
-        localStorage.getItem("token");
-
-      const role =
-        localStorage.getItem("role");
-
-      if (!token || !role) {
-
-        throw new Error(
-          "Please login first"
+      const result =
+        await apiFetch(
+          `/api/outpasses/cancel/${selectedOutpass.id}`,
+          {
+            method: "PATCH",
+          }
         );
-      }
 
-      const response = await fetch(
-        `http://localhost:5000/api/outpasses/cancel/${selectedOutpass.id}`,
-        {
-          method: "PATCH",
-
-          headers: {
-            token,
-            role,
-          },
-        }
-      );
-
-      const data =
-        await response.json();
-
-      console.log(data);
-
-      if (!response.ok) {
-
-        throw new Error(
-          data.message ||
-          "Failed to cancel outpass"
-        );
-      }
+      console.log(result);
 
       /* UPDATE */
 
@@ -125,7 +101,9 @@ export default function CancelOutpass({
 
       console.log(err);
 
-      setError(err.message);
+      setError(
+        err.message
+      );
 
     } finally {
 
@@ -135,71 +113,110 @@ export default function CancelOutpass({
 
   return (
 
-    <div className="bg-white p-6 rounded-2xl border shadow max-w-3xl mx-auto">
+    <div className="bg-white p-6 rounded-3xl border shadow-sm max-w-4xl mx-auto">
 
-      <h2 className="font-semibold text-xl text-[#6d0f16] mb-5">
+      {/* ================= HEADER ================= */}
 
-        Cancel Outpass
+      <div className="mb-6">
 
-      </h2>
+        <h2 className="font-bold text-3xl text-[#6d0f16]">
 
-      {/* ERROR */}
+          Cancel Outpass
+
+        </h2>
+
+        <p className="text-gray-500 mt-1">
+
+          Cancel active hostel outpasses safely
+
+        </p>
+
+      </div>
+
+      {/* ================= ERROR ================= */}
 
       {error && (
 
-        <div className="mb-4 bg-red-50 border border-red-300 text-red-700 p-3 rounded-lg">
+        <div className="mb-4 bg-red-50 border border-red-300 text-red-700 p-4 rounded-2xl">
 
           {error}
 
         </div>
       )}
 
-      {/* SUCCESS */}
+      {/* ================= SUCCESS ================= */}
 
       {successId && (
 
-        <div className="mb-4 bg-green-50 border border-green-300 text-green-700 p-3 rounded-lg">
+        <div className="mb-4 bg-green-50 border border-green-300 text-green-700 p-4 rounded-2xl">
 
-          ✅ Outpass <b>OP-{successId}</b>
-          {" "}cancelled successfully
+          ✅ Outpass
+          {" "}
+          <b>
+            OP-{successId}
+          </b>
+          {" "}
+          cancelled successfully
 
         </div>
       )}
 
-      {/* EMPTY */}
+      {/* ================= EMPTY ================= */}
 
       {activeOutpasses.length === 0 && (
 
-        <div className="text-center text-gray-500 py-10">
+        <div className="text-center text-gray-500 py-14 bg-gray-50 rounded-3xl border">
 
           No active outpasses available
 
         </div>
       )}
 
-      {/* LIST */}
+      {/* ================= LIST ================= */}
 
-      <div className="space-y-3">
+      <div className="space-y-4">
 
         {activeOutpasses.map((o) => (
 
           <div
             key={o.id}
-            className="flex justify-between items-center border rounded-xl p-4 hover:shadow transition"
+            className="flex justify-between items-center border rounded-3xl p-5 hover:shadow-md transition bg-gray-50"
           >
 
             <div>
 
-              <p className="font-medium">
+              <div className="flex items-center gap-3 flex-wrap">
 
-                OP-{o.id}
+                <p className="font-bold text-lg text-[#6d0f16]">
 
-              </p>
+                  OP-{o.id}
 
-              <p className="text-xs text-gray-500 mt-1">
+                </p>
 
-                {o.outp_status}
+                <span
+                  className={`px-3 py-1 text-xs rounded-full font-medium
+                  ${
+                    o.outp_status
+                      ?.toLowerCase() ===
+                    "approved"
 
+                      ? "bg-green-100 text-green-700"
+
+                      : "bg-yellow-100 text-yellow-700"
+                  }`}
+                >
+
+                  {o.outp_status}
+
+                </span>
+
+              </div>
+
+              <p className="text-sm text-gray-500 mt-2">
+
+                {o.outpass_type}
+                {" • "}
+                {o.place_of_visit || "No Place"}
               </p>
 
             </div>
@@ -208,7 +225,7 @@ export default function CancelOutpass({
               onClick={() =>
                 setSelectedOutpass(o)
               }
-              className="bg-[#6d0f16] text-white px-4 py-2 text-xs rounded-lg"
+              className="bg-[#6d0f16] hover:bg-[#560c12] text-white px-5 py-2 rounded-xl transition text-sm"
             >
 
               View
@@ -224,37 +241,52 @@ export default function CancelOutpass({
 
       {selectedOutpass && (
 
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
 
-          <div className="bg-white w-[550px] rounded-2xl shadow-xl p-6 relative">
+          <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl p-7 relative animate-in fade-in zoom-in duration-200">
+
+            {/* CLOSE */}
 
             <button
               onClick={() =>
                 setSelectedOutpass(null)
               }
-              className="absolute top-3 right-4 text-gray-500 hover:text-black"
+              className="absolute top-5 right-5 text-gray-500 hover:text-black text-xl"
             >
 
               ✕
 
             </button>
 
-            <h3 className="text-lg font-semibold text-[#6d0f16] mb-4">
+            {/* TITLE */}
 
-              Outpass Details
+            <div className="mb-6">
 
-            </h3>
+              <h3 className="text-2xl font-bold text-[#6d0f16]">
+
+                Outpass Details
+
+              </h3>
+
+              <p className="text-gray-500 text-sm mt-1">
+
+                Review details before cancellation
+
+              </p>
+
+            </div>
 
             {/* STATUS */}
 
-            <div className="mb-4">
+            <div className="mb-6">
 
               <span
-                className={`px-3 py-1 text-xs rounded-full font-medium
+                className={`px-4 py-2 text-xs rounded-full font-semibold
                 ${
                   selectedOutpass.outp_status
                     ?.toLowerCase() ===
                   "approved"
+
                     ? "bg-green-100 text-green-700"
 
                     : "bg-yellow-100 text-yellow-700"
@@ -269,26 +301,32 @@ export default function CancelOutpass({
 
             {/* DETAILS */}
 
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid md:grid-cols-2 gap-4 text-sm">
 
               <Detail
-                label="ID"
+                label="Outpass ID"
                 value={`OP-${selectedOutpass.id}`}
               />
 
               <Detail
                 label="Type"
-                value={selectedOutpass.outpass_type}
+                value={
+                  selectedOutpass.outpass_type
+                }
               />
 
               <Detail
                 label="Place"
-                value={selectedOutpass.place_of_visit}
+                value={
+                  selectedOutpass.place_of_visit
+                }
               />
 
               <Detail
                 label="Purpose"
-                value={selectedOutpass.purpose}
+                value={
+                  selectedOutpass.purpose
+                }
               />
 
               <Detail
@@ -297,7 +335,9 @@ export default function CancelOutpass({
                   selectedOutpass.departure_datetime
                     ? new Date(
                         selectedOutpass.departure_datetime
-                      ).toLocaleString()
+                      ).toLocaleString(
+                        "en-IN"
+                      )
                     : "N/A"
                 }
               />
@@ -308,7 +348,9 @@ export default function CancelOutpass({
                   selectedOutpass.arrival_datetime
                     ? new Date(
                         selectedOutpass.arrival_datetime
-                      ).toLocaleString()
+                      ).toLocaleString(
+                        "en-IN"
+                      )
                     : "N/A"
                 }
               />
@@ -317,13 +359,13 @@ export default function CancelOutpass({
 
             {/* ACTIONS */}
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="mt-8 flex justify-end gap-3">
 
               <button
                 onClick={() =>
                   setSelectedOutpass(null)
                 }
-                className="px-4 py-2 border rounded-lg"
+                className="px-5 py-3 border rounded-2xl hover:bg-gray-100 transition"
               >
 
                 Close
@@ -335,7 +377,7 @@ export default function CancelOutpass({
                   setShowConfirm(true)
                 }
                 disabled={loading}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg disabled:bg-gray-300"
+                className="px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl disabled:bg-gray-300 transition"
               >
 
                 {loading
@@ -378,19 +420,26 @@ function ConfirmModal({
 
   return (
 
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
 
-      <div className="bg-white w-[380px] p-6 rounded-2xl shadow text-center">
+      <div className="bg-white w-full max-w-md p-7 rounded-3xl shadow-2xl text-center">
 
-        <h3 className="font-semibold text-lg text-[#6d0f16] mb-2">
+        <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-3xl mx-auto mb-5">
+
+          ⚠️
+
+        </div>
+
+        <h3 className="font-bold text-2xl text-[#6d0f16] mb-3">
 
           Confirm Cancellation
 
         </h3>
 
-        <p className="text-sm text-gray-600 mb-5">
+        <p className="text-sm text-gray-600 mb-7 leading-relaxed">
 
           Are you sure you want to cancel this outpass?
+          This action cannot be undone.
 
         </p>
 
@@ -399,7 +448,7 @@ function ConfirmModal({
           <button
             onClick={onCancel}
             disabled={loading}
-            className="px-4 py-2 border rounded-lg"
+            className="px-5 py-3 border rounded-2xl hover:bg-gray-100 transition"
           >
 
             No
@@ -409,7 +458,7 @@ function ConfirmModal({
           <button
             onClick={onConfirm}
             disabled={loading}
-            className="px-4 py-2 bg-red-600 text-white rounded-lg"
+            className="px-5 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl transition"
           >
 
             {loading
@@ -435,15 +484,15 @@ function Detail({
 
   return (
 
-    <div className="bg-gray-50 border rounded-lg p-3">
+    <div className="bg-gray-50 border rounded-2xl p-4">
 
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-gray-500 mb-1">
 
         {label}
 
       </p>
 
-      <p className="font-medium text-sm">
+      <p className="font-semibold text-sm text-gray-800 break-words">
 
         {value || "N/A"}
 

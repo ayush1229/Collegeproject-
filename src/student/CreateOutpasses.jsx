@@ -1,4 +1,10 @@
-import React, { useState } from "react";
+import React, {
+  useState,
+} from "react";
+
+import {
+  apiFetch,
+} from "../utils/api";
 
 export default function CreateOutpass({
   setActive,
@@ -68,6 +74,24 @@ export default function CreateOutpass({
       return false;
     }
 
+    /* DATE VALIDATION */
+
+    if (
+      new Date(
+        form.arrival
+      ) <=
+      new Date(
+        form.departure
+      )
+    ) {
+
+      setError(
+        "Arrival time must be after departure time"
+      );
+
+      return false;
+    }
+
     setError("");
 
     return true;
@@ -85,68 +109,41 @@ export default function CreateOutpass({
 
       setError("");
 
-      const token =
-        localStorage.getItem("token");
+      const result =
+        await apiFetch(
+          "/api/outpasses/create",
+          {
+            method: "POST",
 
-      const role =
-        localStorage.getItem("role");
+            body: JSON.stringify({
 
-      if (!token || !role) {
+              outpass_type:
+                type,
 
-        throw new Error(
-          "Please login first"
+              place_of_visit:
+                type ===
+                "outstation"
+
+                  ? form.place
+
+                  : "Local Area",
+
+              purpose:
+                form.purpose,
+
+              departure_datetime:
+                form.departure,
+
+              arrival_datetime:
+                form.arrival,
+
+              parent_contact:
+                form.parent_contact,
+            }),
+          }
         );
-      }
 
-      const response = await fetch(
-        "http://localhost:5000/api/outpasses/create",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-
-            token,
-            role,
-          },
-
-          body: JSON.stringify({
-
-            outpass_type: type,
-
-            place_of_visit:
-              type === "outstation"
-                ? form.place
-                : "Local Area",
-
-            purpose:
-              form.purpose,
-
-            departure_datetime:
-              form.departure,
-
-            arrival_datetime:
-              form.arrival,
-
-            parent_contact:
-              form.parent_contact,
-          }),
-        }
-      );
-
-      const data =
-        await response.json();
-
-      console.log(data);
-
-      if (!response.ok) {
-
-        throw new Error(
-          data.message ||
-          "Failed to create outpass"
-        );
-      }
+      console.log(result);
 
       /* REFRESH */
 
@@ -171,7 +168,9 @@ export default function CreateOutpass({
 
       console.log(err);
 
-      setError(err.message);
+      setError(
+        err.message
+      );
 
     } finally {
 
@@ -181,43 +180,57 @@ export default function CreateOutpass({
 
   return (
 
-    <div className="min-h-[80vh] flex items-center justify-center px-4">
+    <div className="min-h-[80vh] flex items-center justify-center px-4 py-10">
 
-      <div className="w-full max-w-2xl bg-white p-8 rounded-2xl border shadow">
+      <div className="w-full max-w-3xl bg-white p-8 rounded-3xl border shadow-sm">
 
-        <h2 className="text-2xl font-semibold text-center text-[#6d0f16] mb-6">
+        {/* ================= HEADER ================= */}
 
-          Create Outpass
+        <div className="text-center mb-8">
 
-        </h2>
+          <h2 className="text-4xl font-bold text-[#6d0f16]">
 
-        {/* ERROR */}
+            Create Outpass
+
+          </h2>
+
+          <p className="text-gray-500 mt-2">
+
+            Submit hostel leave request
+
+          </p>
+
+        </div>
+
+        {/* ================= ERROR ================= */}
 
         {error && (
 
-          <div className="mb-4 bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+          <div className="mb-5 bg-red-50 border border-red-200 text-red-600 p-4 rounded-2xl text-sm">
 
             {error}
 
           </div>
         )}
 
-        {/* TYPE */}
+        {/* ================= TYPE ================= */}
 
-        <div className="mb-5">
+        <div className="mb-6">
 
-          <label className="text-sm">
+          <label className="text-sm font-medium text-gray-700">
 
             Outpass Type
 
           </label>
 
           <select
-            className="w-full border rounded-lg px-3 py-2 mt-1"
+            className="w-full border rounded-2xl px-4 py-3 mt-2 focus:outline-none focus:ring-2 focus:ring-[#6d0f16]"
             value={type}
             onChange={(e) => {
 
-              setType(e.target.value);
+              setType(
+                e.target.value
+              );
 
               setForm({
                 place: "",
@@ -232,20 +245,24 @@ export default function CreateOutpass({
           >
 
             <option value="local">
+
               Local
+
             </option>
 
             <option value="outstation">
+
               Outstation
+
             </option>
 
           </select>
 
         </div>
 
-        {/* PURPOSE */}
+        {/* ================= PURPOSE ================= */}
 
-        <div className="mb-5">
+        <div className="mb-6">
 
           <Input
             label="Purpose"
@@ -256,15 +273,16 @@ export default function CreateOutpass({
                 purpose: v,
               })
             }
+            placeholder="Enter reason for leave"
           />
 
         </div>
 
-        {/* OUTSTATION EXTRA FIELD */}
+        {/* ================= OUTSTATION ================= */}
 
         {type === "outstation" && (
 
-          <div className="mb-5">
+          <div className="mb-6">
 
             <Input
               label="Place of Visit"
@@ -275,14 +293,15 @@ export default function CreateOutpass({
                   place: v,
                 })
               }
+              placeholder="Enter city or location"
             />
 
           </div>
         )}
 
-        {/* PARENT CONTACT */}
+        {/* ================= CONTACT ================= */}
 
-        <div className="mb-5">
+        <div className="mb-6">
 
           <Input
             label="Parent Contact"
@@ -293,16 +312,17 @@ export default function CreateOutpass({
                 parent_contact: v,
               })
             }
+            placeholder="Enter parent phone number"
           />
 
         </div>
 
-        {/* DATE TIME */}
+        {/* ================= DATETIME ================= */}
 
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-2 gap-5">
 
           <Input
-            label="Departure"
+            label="Departure Time"
             type="datetime-local"
             value={form.departure}
             onChange={(v) =>
@@ -314,7 +334,7 @@ export default function CreateOutpass({
           />
 
           <Input
-            label="Arrival"
+            label="Arrival Time"
             type="datetime-local"
             value={form.arrival}
             onChange={(v) =>
@@ -327,21 +347,23 @@ export default function CreateOutpass({
 
         </div>
 
-        {/* BUTTON */}
+        {/* ================= BUTTON ================= */}
 
         <button
           onClick={submit}
           disabled={loading}
-          className="mt-8 w-full bg-[#6d0f16] hover:bg-[#5a0c12] text-white py-3 rounded-xl font-medium disabled:opacity-50"
+          className="mt-8 w-full bg-[#6d0f16] hover:bg-[#5a0c12] text-white py-4 rounded-2xl font-semibold transition disabled:opacity-50"
         >
 
           {loading
+
             ? "Submitting..."
+
             : "Submit Outpass"}
 
         </button>
 
-        {/* SUCCESS */}
+        {/* ================= SUCCESS ================= */}
 
         {submitted && (
 
@@ -368,13 +390,14 @@ function Input({
   type = "text",
   value,
   onChange,
+  placeholder = "",
 }) {
 
   return (
 
     <label className="block">
 
-      <span className="text-sm text-gray-600">
+      <span className="text-sm font-medium text-gray-700">
 
         {label}
 
@@ -383,12 +406,13 @@ function Input({
       <input
         type={type}
         value={value}
+        placeholder={placeholder}
         onChange={(e) =>
           onChange(
             e.target.value
           )
         }
-        className="mt-1 w-full border rounded-lg px-3 py-2"
+        className="mt-2 w-full border rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#6d0f16]"
       />
 
     </label>
@@ -404,25 +428,26 @@ function Success({
 
   return (
 
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 px-4">
 
-      <div className="bg-white w-full max-w-sm rounded-2xl p-6 text-center shadow-xl">
+      <div className="bg-white w-full max-w-md rounded-3xl p-8 text-center shadow-2xl animate-in fade-in zoom-in duration-200">
 
-        <div className="text-green-600 text-5xl mb-2">
+        <div className="w-20 h-20 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-5xl mx-auto mb-5">
 
           ✓
 
         </div>
 
-        <h3 className="font-semibold text-lg">
+        <h3 className="font-bold text-2xl text-[#6d0f16]">
 
           Outpass Submitted
 
         </h3>
 
-        <p className="text-sm text-gray-600 mt-1 mb-5">
+        <p className="text-sm text-gray-600 mt-3 mb-7 leading-relaxed">
 
-          Waiting for approval...
+          Your request has been submitted successfully
+          and is waiting for approval.
 
         </p>
 
@@ -433,7 +458,7 @@ function Success({
 
             setActive("my");
           }}
-          className="bg-[#6d0f16] text-white px-5 py-2 rounded-lg w-full"
+          className="bg-[#6d0f16] hover:bg-[#560c12] text-white px-6 py-3 rounded-2xl w-full transition"
         >
 
           Go to My Outpasses

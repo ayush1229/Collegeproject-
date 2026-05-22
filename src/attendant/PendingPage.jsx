@@ -6,6 +6,10 @@ import React, {
 
 import OutpassModal from "./OutpassModal";
 
+import {
+  apiFetch,
+} from "../utils/api";
+
 export default function PendingPage() {
 
   const [selected, setSelected] =
@@ -39,48 +43,24 @@ export default function PendingPage() {
 
       setError("");
 
-      const token =
-        localStorage.getItem("token");
-
-      const role =
-        localStorage.getItem("role");
-
-      const response = await fetch(
-        "http://localhost:5000/api/outpasses/pending",
-        {
-          method: "GET",
-
-          headers: {
-            token,
-            role,
-          },
-        }
-      );
-
       const result =
-        await response.json();
+        await apiFetch(
+          "/api/outpasses/pending"
+        );
 
       console.log(result);
 
-      if (!response.ok) {
-
-        throw new Error(
-          result.message ||
-          "Failed to fetch pending outpasses"
-        );
-      }
-
-      /* ================= FIX ================= */
-
       setData(
-        result.data?.outpasses || []
+        result?.data?.outpasses || []
       );
 
     } catch (err) {
 
       console.log(err);
 
-      setError(err.message);
+      setError(
+        err.message
+      );
 
     } finally {
 
@@ -99,7 +79,9 @@ export default function PendingPage() {
   const processed =
     useMemo(() => {
 
-      let arr = [...data];
+      let arr = Array.isArray(data)
+  ? [...data]
+  : [];
 
       /* SEARCH */
 
@@ -112,27 +94,39 @@ export default function PendingPage() {
 
           o.name
             ?.toLowerCase()
-            .includes(q) ||
+            .includes(q)
+
+          ||
 
           o.roll_no
             ?.toLowerCase()
-            .includes(q) ||
+            .includes(q)
+
+          ||
 
           o.department
             ?.toLowerCase()
-            .includes(q) ||
+            .includes(q)
+
+          ||
 
           o.room
             ?.toLowerCase()
-            .includes(q) ||
+            .includes(q)
+
+          ||
 
           o.hostel
             ?.toLowerCase()
-            .includes(q) ||
+            .includes(q)
+
+          ||
 
           o.place_of_visit
             ?.toLowerCase()
-            .includes(q) ||
+            .includes(q)
+
+          ||
 
           o.purpose
             ?.toLowerCase()
@@ -194,36 +188,15 @@ export default function PendingPage() {
 
     try {
 
-      const token =
-        localStorage.getItem("token");
-
-      const role =
-        localStorage.getItem("role");
-
-      const response = await fetch(
-        `http://localhost:5000/api/outpasses/approve/${id}`,
-        {
-          method: "PATCH",
-
-          headers: {
-            token,
-            role,
-          },
-        }
-      );
-
       const result =
-        await response.json();
+        await apiFetch(
+          `/api/outpasses/approve/${id}`,
+          {
+            method: "PATCH",
+          }
+        );
 
       console.log(result);
-
-      if (!response.ok) {
-
-        throw new Error(
-          result.message ||
-          "Approval failed"
-        );
-      }
 
       fetchPending();
 
@@ -231,7 +204,9 @@ export default function PendingPage() {
 
       console.log(err);
 
-      alert(err.message);
+      alert(
+        err.message
+      );
     }
   }
 
@@ -241,36 +216,15 @@ export default function PendingPage() {
 
     try {
 
-      const token =
-        localStorage.getItem("token");
-
-      const role =
-        localStorage.getItem("role");
-
-      const response = await fetch(
-        `http://localhost:5000/api/outpasses/reject/${id}`,
-        {
-          method: "PATCH",
-
-          headers: {
-            token,
-            role,
-          },
-        }
-      );
-
       const result =
-        await response.json();
+        await apiFetch(
+          `/api/outpasses/reject/${id}`,
+          {
+            method: "PATCH",
+          }
+        );
 
       console.log(result);
-
-      if (!response.ok) {
-
-        throw new Error(
-          result.message ||
-          "Rejection failed"
-        );
-      }
 
       fetchPending();
 
@@ -278,7 +232,9 @@ export default function PendingPage() {
 
       console.log(err);
 
-      alert(err.message);
+      alert(
+        err.message
+      );
     }
   }
 
@@ -451,7 +407,9 @@ export default function PendingPage() {
 
                 <p className="text-sm text-gray-500 mt-1">
 
-                  {o.roll_no} • {o.department}
+                  {o.roll_no || "No Roll No"}
+                  {" • "}
+                  {o.department}
 
                 </p>
 
@@ -465,7 +423,7 @@ export default function PendingPage() {
                   onClick={() =>
                     setSelected(o)
                   }
-                  className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm"
+                  className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm transition"
                 >
 
                   View
@@ -476,7 +434,7 @@ export default function PendingPage() {
                   onClick={() =>
                     approve(o.id)
                   }
-                  className="px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm"
+                  className="px-4 py-2 rounded-xl bg-green-600 hover:bg-green-700 text-white text-sm transition"
                 >
 
                   Approve
@@ -487,7 +445,7 @@ export default function PendingPage() {
                   onClick={() =>
                     reject(o.id)
                   }
-                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm"
+                  className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm transition"
                 >
 
                   Reject

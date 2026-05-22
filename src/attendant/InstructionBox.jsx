@@ -48,42 +48,62 @@ export default function InstructionBox({
       "border-green-200 bg-green-50 text-green-700",
   };
 
+  /* ================= ICONS ================= */
+
+  const roleIcons = {
+
+    attendant: "🛡️",
+
+    guard: "🚪",
+
+    student: "🎓",
+  };
+
   return (
 
     <div
-      className={`mb-6 border rounded-2xl p-5 shadow-sm ${roleStyles[role]}`}
+      className={`mb-6 border rounded-3xl p-6 shadow-sm transition hover:shadow-md ${roleStyles[role]}`}
     >
 
-      {/* HEADER */}
+      {/* ================= HEADER ================= */}
 
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-3 mb-5">
 
-        <div className="text-xl">
+        <div className="w-11 h-11 rounded-2xl bg-white/70 flex items-center justify-center text-2xl shadow-sm">
 
-          {role === "attendant"
-            ? "🛡️"
-            : role === "guard"
-            ? "🚪"
-            : "🎓"}
+          {roleIcons[role]}
 
         </div>
 
-        <h2 className="font-bold text-lg">
+        <div>
 
-          Instructions
+          <h2 className="font-bold text-lg">
 
-        </h2>
+            Instructions
+
+          </h2>
+
+          <p className="text-xs opacity-75 mt-1">
+
+            Follow hostel management guidelines carefully
+
+          </p>
+
+        </div>
 
       </div>
 
-      {/* LIST */}
+      {/* ================= LIST ================= */}
 
-      <ul className="space-y-2 text-sm list-disc ml-5">
+      <ul className="space-y-3 text-sm list-disc ml-5 leading-relaxed">
 
         {currentInstructions.map(
           (item, index) => (
 
-            <li key={index}>
+            <li
+              key={index}
+              className="break-words"
+            >
 
               {item}
 

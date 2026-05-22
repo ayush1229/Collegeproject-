@@ -6,6 +6,10 @@ import React, {
 
 import OutpassModal from "./OutpassModal";
 
+import {
+  apiFetch,
+} from "../utils/api";
+
 export default function ApprovedPage() {
 
   const [selected, setSelected] =
@@ -39,53 +43,32 @@ export default function ApprovedPage() {
 
       setError("");
 
-      const token =
-        localStorage.getItem("token");
-
-      const role =
-        localStorage.getItem("role");
-
-      const response = await fetch(
-        "http://localhost:5000/api/students/status",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-            token,
-            role,
-          },
-
-          body: JSON.stringify({
-            outp_status:
-              "Approved",
-          }),
-        }
-      );
-
       const result =
-        await response.json();
+        await apiFetch(
+          "/api/students/status",
+          {
+            method: "POST",
+
+            body: JSON.stringify({
+              outp_status:
+                "Approved",
+            }),
+          }
+        );
 
       console.log(result);
 
-      if (!response.ok) {
-
-        throw new Error(
-          result.message ||
-          "Failed to fetch approved outpasses"
-        );
-      }
-
       setData(
-        result.data || []
+        result?.data || []
       );
 
     } catch (err) {
 
       console.log(err);
 
-      setError(err.message);
+      setError(
+        err.message
+      );
 
     } finally {
 
@@ -117,27 +100,39 @@ export default function ApprovedPage() {
 
           o.name
             ?.toLowerCase()
-            .includes(q) ||
+            .includes(q)
+
+          ||
 
           o.roll_no
             ?.toLowerCase()
-            .includes(q) ||
+            .includes(q)
+
+          ||
 
           o.department
             ?.toLowerCase()
-            .includes(q) ||
+            .includes(q)
+
+          ||
 
           o.room
             ?.toLowerCase()
-            .includes(q) ||
+            .includes(q)
+
+          ||
 
           o.hostel
             ?.toLowerCase()
-            .includes(q) ||
+            .includes(q)
+
+          ||
 
           o.place_of_visit
             ?.toLowerCase()
-            .includes(q) ||
+            .includes(q)
+
+          ||
 
           o.purpose
             ?.toLowerCase()
@@ -360,7 +355,9 @@ export default function ApprovedPage() {
 
                 <p className="text-sm text-gray-500 mt-1">
 
-                  {o.roll_no} • {o.department}
+                  {o.roll_no || "No Roll No"}
+                  {" • "}
+                  {o.department}
 
                 </p>
 
@@ -532,7 +529,6 @@ export default function ApprovedPage() {
     </div>
   );
 }
-
 function Info({
   label,
   value,
