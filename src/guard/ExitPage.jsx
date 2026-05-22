@@ -10,7 +10,7 @@ import {
 
 export default function ExitPage() {
 
-  const [logs, setLogs] =
+  const [students, setStudents] =
     useState([]);
 
   const [loading, setLoading] =
@@ -22,15 +22,12 @@ export default function ExitPage() {
   const [search, setSearch] =
     useState("");
 
-  const [hostel, setHostel] =
-    useState("All");
-
-  const [sort, setSort] =
-    useState("LATEST");
+  const [processingId, setProcessingId] =
+    useState(null);
 
   /* ================= FETCH ================= */
 
-  async function fetchApproved() {
+  async function fetchStudents() {
 
     try {
 
@@ -38,24 +35,28 @@ export default function ExitPage() {
 
       setError("");
 
-      const result =
+      const data =
         await apiFetch(
-          "/api/students/status",
-          {
-            method: "POST",
-
-            body: JSON.stringify({
-              outp_status:
-                "Approved",
-            }),
-          }
+          "/api/outpasses/monitor"
         );
 
-      console.log(result);
+      console.log(data);
 
-      setLogs(
-        result?.data || []
-      );
+      const filtered =
+        (data.data || []).filter(
+          (o) =>
+
+            o.outp_status ===
+              "Approved" &&
+
+            o.is_active ===
+              true &&
+
+            o.std_status ===
+              "In"
+        );
+
+      setStudents(filtered);
 
     } catch (err) {
 
@@ -73,32 +74,72 @@ export default function ExitPage() {
 
   useEffect(() => {
 
-    fetchApproved();
+    fetchStudents();
 
   }, []);
 
-  /* ================= EXIT ================= */
+  /* ================= SEARCH ================= */
 
-  async function handleExit(id) {
+  const filteredStudents =
+    useMemo(() => {
+
+      const query =
+        search.toLowerCase();
+
+      return students.filter(
+        (s) =>
+
+          s.name
+            ?.toLowerCase?.()
+            ?.includes(query) ||
+
+          s.roll_no
+            ?.toLowerCase?.()
+            ?.includes(query)
+      );
+
+    }, [students, search]);
+
+  /* ================= MARK EXIT ================= */
+
+  async function handleExit(
+    outpassId
+  ) {
 
     try {
 
-      const result =
-        await apiFetch(
-          "/api/outpasses/record-entry",
-          {
-            method: "POST",
+      setProcessingId(
+        outpassId
+      );
 
-            body: JSON.stringify({
-              outpass_id: id,
-              action: "exit",
-            }),
-          }
-        );
+      console.log(
+        "Marking Exit:",
+        outpassId
+      );
 
-      console.log(result);
+      /* ================= IMPORTANT ================= */
 
-      fetchApproved();
+      // Your backend route is probably:
+      // POST /api/outpasses/record-entry
+
+      await apiFetch(
+        "/api/outpasses/record-entry",
+        {
+          method: "POST",
+
+          body: JSON.stringify({
+
+            outpass_id:
+              outpassId,
+
+            action: "exit",
+
+            gate: "Main Gate",
+          }),
+        }
+      );
+
+      await fetchStudents();
 
     } catch (err) {
 
@@ -107,351 +148,254 @@ export default function ExitPage() {
       alert(
         err.message
       );
+
+    } finally {
+
+      setProcessingId(
+        null
+      );
     }
   }
 
-  /* ================= FILTER ================= */
-
-  const filtered =
-    useMemo(() => {
-
-      let arr = logs.filter((o) => {
-
-        if (
-          o.outp_status !==
-          "Approved"
-        ) {
-
-          return false;
-        }
-
-        if (
-          o.std_status ===
-          "Out"
-        ) {
-
-          return false;
-        }
-
-        const q =
-          search.toLowerCase();
-
-        const matchSearch =
-
-          o.name
-            ?.toLowerCase()
-            .includes(q)
-
-          ||
-
-          o.roll_no
-            ?.toLowerCase()
-            .includes(q)
-
-          ||
-
-          o.room
-            ?.toLowerCase()
-            .includes(q);
-
-        const matchHostel =
-
-          hostel === "All"
-
-          ||
-
-          o.hostel === hostel;
-
-        return (
-          matchSearch &&
-          matchHostel
-        );
-      });
-
-      arr.sort((a, b) =>
-
-        sort === "LATEST"
-
-          ? new Date(
-              b.created_at
-            ) -
-            new Date(
-              a.created_at
-            )
-
-          : new Date(
-              a.created_at
-            ) -
-            new Date(
-              b.created_at
-            )
-      );
-
-      return arr;
-
-    }, [
-      logs,
-      search,
-      hostel,
-      sort,
-    ]);
-
-  /* ================= LOADING ================= */
-
-  if (loading) {
-
-    return (
-
-      <div className="p-10 text-center text-gray-500">
-
-        Loading exit panel...
-
-      </div>
-    );
-  }
-
-  /* ================= ERROR ================= */
-
-  if (error) {
-
-    return (
-
-      <div className="p-10 text-red-600">
-
-        {error}
-
-      </div>
-    );
-  }
+  /* ================= UI ================= */
 
   return (
 
-    <div className="space-y-6">
+    <div>
 
-      {/* ================= HEADER ================= */}
+      {/* HEADER */}
 
-      <div>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
 
-        <h1 className="text-3xl font-bold text-[#6d0f16]">
+        <div>
 
-          Exit Panel
+          <h1 className="text-4xl font-bold text-[#6d0f16]">
 
-        </h1>
+            Exit Students
 
-        <p className="text-gray-500 mt-1">
+          </h1>
 
-          Verify approved students before exit
+          <p className="text-gray-500 mt-2">
 
-        </p>
+            Verify approved students before hostel exit
+
+          </p>
+
+        </div>
+
+        <div className="bg-white border shadow-sm rounded-3xl px-6 py-5 min-w-[180px]">
+
+          <p className="text-sm text-gray-500">
+
+            Eligible Students
+
+          </p>
+
+          <p className="text-4xl font-bold text-[#6d0f16] mt-1">
+
+            {filteredStudents.length}
+
+          </p>
+
+        </div>
 
       </div>
 
-      {/* ================= FILTER BAR ================= */}
+      {/* SEARCH */}
 
-      <div className="bg-white border rounded-2xl p-4 flex flex-wrap gap-3">
+      <div className="mb-6">
 
         <input
+          type="text"
+          placeholder="Search by name or roll number..."
           value={search}
           onChange={(e) =>
             setSearch(
               e.target.value
             )
           }
-          placeholder="Search student / roll / room"
-          className="border px-4 py-2 rounded-xl flex-1"
+          className="w-full border border-gray-300 rounded-2xl px-5 py-4 outline-none focus:border-[#6d0f16]"
         />
-
-        <select
-          value={hostel}
-          onChange={(e) =>
-            setHostel(
-              e.target.value
-            )
-          }
-          className="border px-4 py-2 rounded-xl"
-        >
-
-          <option value="All">
-
-            All Hostels
-
-          </option>
-
-          {[...new Set(
-            logs.map(
-              (o) => o.hostel
-            )
-          )].map((h) => (
-
-            <option
-              key={h}
-              value={h}
-            >
-
-              {h}
-
-            </option>
-          ))}
-
-        </select>
-
-        <select
-          value={sort}
-          onChange={(e) =>
-            setSort(
-              e.target.value
-            )
-          }
-          className="border px-4 py-2 rounded-xl"
-        >
-
-          <option value="LATEST">
-
-            Latest First
-
-          </option>
-
-          <option value="OLDEST">
-
-            Oldest First
-
-          </option>
-
-        </select>
 
       </div>
 
-      {/* ================= EMPTY ================= */}
+      {/* ERROR */}
 
-      {filtered.length === 0 && (
+      {error && (
 
-        <div className="bg-white border rounded-2xl p-10 text-center text-gray-500">
+        <div className="bg-red-50 border border-red-200 text-red-600 rounded-2xl p-4 mb-5">
 
-          No approved students available
+          {error}
 
         </div>
       )}
 
-      {/* ================= LIST ================= */}
+      {/* LOADING */}
 
-      <div className="space-y-5">
+      {loading ? (
 
-        {filtered.map((o) => (
+        <div className="bg-white rounded-3xl border shadow-sm p-10 text-center text-gray-500">
 
-          <div
-            key={o.id}
-            className="bg-white border rounded-3xl p-6 shadow-sm hover:shadow-md transition"
-          >
+          Loading students...
 
-            <div className="flex justify-between flex-wrap gap-5">
+        </div>
 
-              {/* LEFT */}
+      ) : filteredStudents.length === 0 ? (
 
-              <div className="flex-1">
+        <div className="bg-white rounded-3xl border shadow-sm p-10 text-center text-gray-500">
 
-                <div className="flex items-center gap-3 flex-wrap">
+          No students available for exit
 
-                  <h2 className="text-2xl font-bold">
+        </div>
 
-                    {o.name}
+      ) : (
 
-                  </h2>
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
 
-                  <span className="bg-green-100 text-green-700 text-xs px-3 py-1 rounded-full font-medium">
+          {filteredStudents.map(
+            (student) => {
 
-                    Approved
+              const outpassId =
+                student.outpass_id ||
+                student.id;
 
-                  </span>
+              return (
 
-                </div>
-
-                <p className="text-sm text-gray-500 mt-1">
-
-                  {o.roll_no || "No Roll No"}
-                  {" • "}
-                  {o.department}
-
-                </p>
-
-                <div className="grid md:grid-cols-3 gap-4 mt-5">
-
-                  <Info
-                    label="Hostel"
-                    value={o.hostel}
-                  />
-
-                  <Info
-                    label="Room"
-                    value={o.room}
-                  />
-
-                  <Info
-                    label="Phone"
-                    value={o.phone}
-                  />
-
-                  <Info
-                    label="Place"
-                    value={
-                      o.place_of_visit
-                    }
-                  />
-
-                  <Info
-                    label="Purpose"
-                    value={o.purpose}
-                  />
-
-                </div>
-
-              </div>
-
-              {/* RIGHT */}
-
-              <div className="min-w-[260px] space-y-4">
-
-                <button
-                  onClick={() =>
-                    handleExit(o.id)
-                  }
-                  className="w-full bg-[#6d0f16] hover:bg-[#530b11] text-white py-3 rounded-2xl font-medium transition"
+                <div
+                  key={outpassId}
+                  className="bg-white border rounded-3xl shadow-sm p-6 hover:shadow-md transition"
                 >
 
-                  Mark Exit
+                  {/* TOP */}
 
-                </button>
+                  <div className="flex items-start justify-between gap-4">
 
-              </div>
+                    <div>
 
-            </div>
+                      <h2 className="text-2xl font-bold text-[#6d0f16]">
 
-          </div>
-        ))}
+                        {student.name}
 
-      </div>
+                      </h2>
+
+                      <p className="text-gray-500 mt-1">
+
+                        {student.roll_no ||
+                          "No Roll Number"}
+
+                      </p>
+
+                    </div>
+
+                    <span className="bg-green-100 text-green-700 px-4 py-2 rounded-full text-xs font-semibold">
+
+                      Approved
+
+                    </span>
+
+                  </div>
+
+                  {/* DETAILS */}
+
+                  <div className="grid grid-cols-2 gap-4 mt-6">
+
+                    <Detail
+                      label="Department"
+                      value={
+                        student.department
+                      }
+                    />
+
+                    <Detail
+                      label="Hostel"
+                      value={
+                        student.hostel
+                      }
+                    />
+
+                    <Detail
+                      label="Room"
+                      value={
+                        student.room
+                      }
+                    />
+
+                    <Detail
+                      label="Type"
+                      value={
+                        student.outpass_type
+                      }
+                    />
+
+                    <Detail
+                      label="Place"
+                      value={
+                        student.place_of_visit
+                      }
+                    />
+
+                    <Detail
+                      label="Purpose"
+                      value={
+                        student.purpose
+                      }
+                    />
+
+                  </div>
+
+                  {/* ACTION */}
+
+                  <button
+                    onClick={() =>
+                      handleExit(
+                        outpassId
+                      )
+                    }
+                    disabled={
+                      processingId ===
+                      outpassId
+                    }
+                    className="w-full mt-6 bg-[#6d0f16] hover:bg-[#530b11] text-white py-4 rounded-2xl font-semibold transition disabled:opacity-50"
+                  >
+
+                    {processingId ===
+                    outpassId
+
+                      ? "Processing..."
+
+                      : "Mark Exit"}
+                  </button>
+
+                </div>
+              );
+            }
+          )}
+
+        </div>
+      )}
 
     </div>
   );
 }
 
-/* ================= INFO ================= */
+/* ================= DETAIL ================= */
 
-function Info({
+function Detail({
   label,
   value,
 }) {
 
   return (
 
-    <div className="bg-gray-50 border rounded-xl p-3">
+    <div className="bg-gray-50 border rounded-2xl p-4">
 
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-gray-500 mb-1">
 
         {label}
 
       </p>
 
-      <p className="font-semibold text-sm mt-1 break-words">
+      <p className="font-semibold text-sm text-gray-800 break-words">
 
         {value || "-"}
 

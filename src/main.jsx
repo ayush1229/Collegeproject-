@@ -23,6 +23,12 @@ import Signup from "./auth/signup";
 
 import OutpassLayout from "./student/outpasses";
 
+/* ================= COMPLAINT ================= */
+
+import Complaint from "./complaint/complaint";
+
+import ComplaintForm from "./complaint/ComplaintForm";
+
 /* ================= ATTENDANT ================= */
 
 import AdminLayout from "./attendant/AdminLayout";
@@ -32,6 +38,7 @@ import PendingPage from "./attendant/PendingPage";
 import ApprovedPage from "./attendant/ApprovedPage";
 
 import RejectedPage from "./attendant/RejectedPage";
+import Admin from "./admin/admin";
 
 /* ================= GUARD ================= */
 
@@ -123,6 +130,26 @@ const router =
     {
       path: "/student",
       element: <OutpassLayout />,
+      errorElement: <ErrorPage />,
+    },
+
+    /* ================= COMPLAINT ================= */
+
+    {
+      path: "/complaint",
+      element: <Complaint />,
+      errorElement: <ErrorPage />,
+    },
+
+    {
+      path: "/complaint-form",
+      element: <ComplaintForm />,
+      errorElement: <ErrorPage />,
+    },
+
+    {
+      path: "/admin",
+      element: <Admin />,
       errorElement: <ErrorPage />,
     },
 
