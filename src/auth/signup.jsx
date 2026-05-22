@@ -1,9 +1,22 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import {
+  useState,
+} from "react";
+
+import {
+  Link,
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  apiFetch,
+} from "../utils/api";
 
 function Signup() {
 
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
+
+  /* ================= STATE ================= */
 
   const [formData, setFormData] =
     useState({
@@ -32,6 +45,11 @@ function Signup() {
   const [error, setError] =
     useState("");
 
+  const [loading, setLoading] =
+    useState(false);
+
+  /* ================= FLAGS ================= */
+
   const isStudent =
     formData.role === "student";
 
@@ -39,262 +57,270 @@ function Signup() {
     formData.role === "student" ||
     formData.role === "attendant";
 
+  /* ================= HANDLE CHANGE ================= */
+
   const handleChange = (e) => {
 
     setFormData({
       ...formData,
+
       [e.target.name]:
         e.target.value,
     });
   };
 
-  const handleSignup = async (e) => {
+  /* ================= REDIRECT ================= */
 
-    e.preventDefault();
+  const getRedirectPath = (
+    role
+  ) => {
 
-    /* ================= VALIDATION ================= */
+    switch (role) {
 
-    if (isStudent) {
+      case "guard":
+        return "/guard";
 
-      if (
-        !formData.name ||
-        !formData.email ||
-        !formData.password ||
-        !formData.confirmPassword ||
-        !formData.phone ||
-        !formData.hostel ||
-        !formData.room ||
-        !formData.department ||
-        !formData.rollno
-      ) {
+      case "attendant":
+        return "/attendant";
 
-        setError(
-          "Please fill all fields"
-        );
-
-        return;
-      }
-
-    } else {
-
-      if (
-        !formData.name ||
-        !formData.email ||
-        !formData.phone ||
-        !formData.password ||
-        !formData.confirmPassword
-      ) {
-
-        setError(
-          "Please fill all fields"
-        );
-
-        return;
-      }
-
-      if (
-        showHostelField &&
-        !formData.hostel
-      ) {
-
-        setError(
-          "Please select a hostel"
-        );
-
-        return;
-      }
+      case "student":
+      default:
+        return "/student";
     }
+  };
 
-    if (
-      !formData.email.endsWith(
-        "@nith.ac.in"
-      )
-    ) {
+  /* ================= SIGNUP ================= */
 
-      setError(
-        "Use your college email"
-      );
+  const handleSignup =
+    async (e) => {
 
-      return;
-    }
+      e.preventDefault();
 
-    if (
-      formData.password !==
-      formData.confirmPassword
-    ) {
+      /* ================= VALIDATION ================= */
 
-      setError(
-        "Passwords do not match"
-      );
+      if (isStudent) {
 
-      return;
-    }
+        if (
+          !formData.name ||
+          !formData.email ||
+          !formData.password ||
+          !formData.confirmPassword ||
+          !formData.phone ||
+          !formData.hostel ||
+          !formData.room ||
+          !formData.department ||
+          !formData.rollno
+        ) {
 
-    try {
+          setError(
+            "Please fill all fields"
+          );
 
-      let payload;
-
-      /* ================= STUDENT ================= */
-
-      if (
-        formData.role === "student"
-      ) {
-
-        payload = {
-
-          role: "student",
-
-          name: formData.name,
-
-          email: formData.email,
-
-          password:
-            formData.password,
-
-          phone: formData.phone,
-
-          hostel:
-            formData.hostel,
-
-          room: formData.room,
-
-          department:
-            formData.department,
-
-          rollno:
-            formData.rollno,
-        };
-      }
-
-      /* ================= ATTENDANT ================= */
-
-      else if (
-        formData.role === "attendant"
-      ) {
-
-        payload = {
-
-          role: "attendant",
-
-          name: formData.name,
-
-          email: formData.email,
-
-          password:
-            formData.password,
-
-          phone: formData.phone,
-
-          hostel:
-            formData.hostel,
-        };
-      }
-
-      /* ================= GUARD ================= */
-
-      else {
-
-        payload = {
-
-          role: "guard",
-
-          name: formData.name,
-
-          email: formData.email,
-
-          password:
-            formData.password,
-
-          phone: formData.phone,
-        };
-      }
-
-      /* ================= API ================= */
-
-      const response = await fetch(
-        "http://localhost:5000/api/auth/signup",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-
-          body: JSON.stringify(
-            payload
-          ),
+          return;
         }
-      );
 
-      const data =
-        await response.json();
+      } else {
 
-      console.log(data);
+        if (
+          !formData.name ||
+          !formData.email ||
+          !formData.phone ||
+          !formData.password ||
+          !formData.confirmPassword
+        ) {
 
-      if (!response.ok) {
+          setError(
+            "Please fill all fields"
+          );
+
+          return;
+        }
+
+        if (
+          showHostelField &&
+          !formData.hostel
+        ) {
+
+          setError(
+            "Please select a hostel"
+          );
+
+          return;
+        }
+      }
+
+      if (
+        !formData.email.endsWith(
+          "@nith.ac.in"
+        )
+      ) {
 
         setError(
-          data.message ||
+          "Use your college email"
+        );
+
+        return;
+      }
+
+      if (
+        formData.password !==
+        formData.confirmPassword
+      ) {
+
+        setError(
+          "Passwords do not match"
+        );
+
+        return;
+      }
+
+      try {
+
+        setLoading(true);
+
+        setError("");
+
+        let payload;
+
+        /* ================= STUDENT ================= */
+
+        if (
+          formData.role === "student"
+        ) {
+
+          payload = {
+
+            role: "student",
+
+            name: formData.name,
+
+            email: formData.email,
+
+            password:
+              formData.password,
+
+            phone: formData.phone,
+
+            hostel:
+              formData.hostel,
+
+            room: formData.room,
+
+            department:
+              formData.department,
+
+            rollno:
+              formData.rollno,
+          };
+        }
+
+        /* ================= ATTENDANT ================= */
+
+        else if (
+          formData.role === "attendant"
+        ) {
+
+          payload = {
+
+            role: "attendant",
+
+            name: formData.name,
+
+            email: formData.email,
+
+            password:
+              formData.password,
+
+            phone: formData.phone,
+
+            hostel:
+              formData.hostel,
+          };
+        }
+
+        /* ================= GUARD ================= */
+
+        else {
+
+          payload = {
+
+            role: "guard",
+
+            name: formData.name,
+
+            email: formData.email,
+
+            password:
+              formData.password,
+
+            phone: formData.phone,
+          };
+        }
+
+        /* ================= API ================= */
+
+        const data =
+          await apiFetch(
+            "/api/auth/signup",
+            {
+              method: "POST",
+
+              body: JSON.stringify(
+                payload
+              ),
+            }
+          );
+
+        console.log(data);
+
+        /* ================= SAVE ================= */
+
+        const savedUser = {
+
+          ...(data.user || {}),
+
+          role: payload.role,
+
+          token: data.token,
+        };
+
+        localStorage.setItem(
+          "token",
+          data.token || ""
+        );
+
+        localStorage.setItem(
+          "role",
+          payload.role
+        );
+
+        localStorage.setItem(
+          "user",
+          JSON.stringify(
+            savedUser
+          )
+        );
+
+        navigate(
+          getRedirectPath(
+            payload.role
+          )
+        );
+
+      } catch (err) {
+
+        console.error(err);
+
+        setError(
+          err.message ||
           "Signup failed"
         );
 
-        return;
+      } finally {
+
+        setLoading(false);
       }
-
-      /* ================= SAVE ================= */
-
-      const savedUser = {
-
-        ...(data.user || {}),
-
-        role: payload.role,
-
-        token: data.token,
-      };
-
-      localStorage.setItem(
-        "token",
-        data.token || ""
-      );
-
-      localStorage.setItem(
-        "role",
-        payload.role
-      );
-
-      localStorage.setItem(
-        "user",
-        JSON.stringify(savedUser)
-      );
-
-      setError("");
-
-      alert(
-        "Account Created Successfully!"
-      );
-
-      /* ================= TEMP REDIRECT ================= */
-
-      // Later:
-      // navigate("/student")
-      // navigate("/guard")
-      // navigate("/admin")
-
-      navigate("/");
-
-    } catch (err) {
-
-      console.error(
-        "Signup failed:",
-        err
-      );
-
-      setError(
-        "Could not connect to server"
-      );
-    }
-  };
+    };
 
   return (
 
@@ -347,7 +373,7 @@ function Signup() {
             </p>
           )}
 
-          {/* ================= ROLE FIRST ================= */}
+          {/* ================= ROLE ================= */}
 
           <select
             name="role"
@@ -357,15 +383,21 @@ function Signup() {
           >
 
             <option value="student">
+
               Student
+
             </option>
 
             <option value="attendant">
+
               Attendant
+
             </option>
 
             <option value="guard">
+
               Security Guard
+
             </option>
 
           </select>
@@ -413,27 +445,39 @@ function Signup() {
               >
 
                 <option value="">
+
                   Select Department
+
                 </option>
 
                 <option value="CSE">
+
                   Computer Science & Engineering
+
                 </option>
 
                 <option value="ECE">
+
                   Electronics & Communication
+
                 </option>
 
                 <option value="ME">
+
                   Mechanical Engineering
+
                 </option>
 
                 <option value="CE">
+
                   Civil Engineering
+
                 </option>
 
                 <option value="EE">
+
                   Electrical Engineering
+
                 </option>
 
               </select>
@@ -471,23 +515,33 @@ function Signup() {
             >
 
               <option value="">
+
                 Select Hostel
+
               </option>
 
               <option value="KBH">
+
                 KBH
+
               </option>
 
               <option value="Hostel B">
+
                 Hostel B
+
               </option>
 
               <option value="Hostel C">
+
                 Hostel C
+
               </option>
 
               <option value="Hostel D">
+
                 Hostel D
+
               </option>
 
             </select>
@@ -517,10 +571,13 @@ function Signup() {
 
           <button
             type="submit"
-            className="w-full bg-[#5b0e0e] hover:bg-[#741616] transition text-white py-3 rounded-md"
+            disabled={loading}
+            className="w-full bg-[#5b0e0e] hover:bg-[#741616] transition text-white py-3 rounded-md disabled:opacity-50"
           >
 
-            Create Account
+            {loading
+              ? "Creating Account..."
+              : "Create Account"}
 
           </button>
 
@@ -531,7 +588,7 @@ function Signup() {
             Already have an account?{" "}
 
             <Link
-              to="/"
+              to="/signin"
               className="text-[#5b0e0e] font-medium"
             >
 

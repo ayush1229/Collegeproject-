@@ -1,27 +1,41 @@
-import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  Link,
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  apiFetch,
+} from "../utils/api";
 
 function Login() {
 
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
   /* ================= REDIRECT ================= */
 
-  const getRedirectPath = (role) => {
+  const getRedirectPath = (
+  role
+) => {
 
-    switch (role) {
+  switch (role) {
 
-      case "guard":
-        return "/student";
+    case "guard":
+      return "/guard";
 
-      case "attendant":
-        return "/student";
+    case "attendant":
+      return "/attendant";
 
-      case "student":
-      default:
-        return "/student";
-    }
-  };
+    case "student":
+    default:
+      return "/student";
+  }
+};
 
   /* ================= STATE ================= */
 
@@ -47,6 +61,7 @@ function Login() {
 
     setFormData({
       ...formData,
+
       [e.target.name]:
         e.target.value,
     });
@@ -56,202 +71,123 @@ function Login() {
 
   useEffect(() => {
 
-    async function checkAuth() {
+    const token =
+      localStorage.getItem(
+        "token"
+      );
 
-      const storedUser =
-        JSON.parse(
-          localStorage.getItem("user")
-        );
+    const role =
+      localStorage.getItem(
+        "role"
+      );
+
+    if (
+      token &&
+      role
+    ) {
+
+      navigate(
+        getRedirectPath(role)
+      );
+    }
+
+  }, [navigate]);
+
+  /* ================= LOGIN ================= */
+
+  const handleLogin =
+    async (e) => {
+
+      e.preventDefault();
 
       if (
-        !storedUser?.token ||
-        !storedUser?.role
+        !formData.email ||
+        !formData.password ||
+        !formData.role
       ) {
+
+        setError(
+          "Please fill all fields"
+        );
 
         return;
       }
 
       try {
 
-        const response = await fetch(
-          "http://localhost:5000/api/auth/login",
-          {
-            method: "GET",
+        setLoading(true);
 
-            headers: {
-              "Content-Type":
-                "application/json",
+        setError("");
 
-              token:
-                storedUser.token,
+        const data =
+          await apiFetch(
+            "/api/auth/login",
+            {
+              method: "POST",
 
-              role:
-                storedUser.role,
-            },
-          }
-        );
+              body: JSON.stringify({
 
-        if (response.ok) {
+                email:
+                  formData.email,
 
-          navigate(
-            getRedirectPath(
-              storedUser.role
-            )
+                password:
+                  formData.password,
+
+                role:
+                  formData.role,
+              }),
+            }
           );
-        }
 
-      } catch (error) {
+        console.log(data);
 
-        console.error(
-          "Auth check failed:",
-          error
+        /* ================= SAVE ================= */
+
+        localStorage.setItem(
+          "token",
+          data.token
         );
-      }
-    }
 
-    checkAuth();
+        localStorage.setItem(
+          "role",
+          formData.role
+        );
 
-  }, [navigate]);
+        localStorage.setItem(
+          "user",
+          JSON.stringify(
+            data.user
+          )
+        );
 
-  /* ================= LOGIN ================= */
+        /* ================= REDIRECT ================= */
 
-  const handleLogin = async (e) => {
+        navigate(
+          getRedirectPath(
+            formData.role
+          )
+        );
 
-    e.preventDefault();
+      } catch (err) {
 
-    if (
-      !formData.email ||
-      !formData.password ||
-      !formData.role
-    ) {
-
-      setError(
-        "Please fill all fields"
-      );
-
-      return;
-    }
-
-    if (
-      !formData.email.endsWith(
-        "@nith.ac.in"
-      )
-    ) {
-
-      setError(
-        "Use your college email"
-      );
-
-      return;
-    }
-
-    try {
-
-      setLoading(true);
-
-      setError("");
-
-      const response = await fetch(
-        "http://localhost:5000/api/auth/login",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-
-          body: JSON.stringify({
-
-            email:
-              formData.email,
-
-            password:
-              formData.password,
-
-            role:
-              formData.role,
-          }),
-        }
-      );
-
-      const data =
-        await response.json();
-
-      console.log(data);
-
-      if (!response.ok) {
+        console.error(err);
 
         setError(
-          data.message ||
+          err.message ||
           "Login failed"
         );
 
-        return;
+      } finally {
+
+        setLoading(false);
       }
-
-      /* ================= SAVE ================= */
-
-      const user = {
-
-        ...(data.user || {}),
-
-        role:
-          formData.role,
-
-        token:
-          data.token,
-      };
-
-      localStorage.setItem(
-        "token",
-        data.token || ""
-      );
-
-      localStorage.setItem(
-        "role",
-        formData.role
-      );
-
-      localStorage.setItem(
-        "user",
-        JSON.stringify(user)
-      );
-
-      setError("");
-
-      alert(
-        "Successfully Logged In!"
-      );
-
-      navigate(
-        getRedirectPath(
-          user.role
-        )
-      );
-
-    } catch (err) {
-
-      console.error(
-        "Login failed:",
-        err
-      );
-
-      setError(
-        "Could not connect to server"
-      );
-
-    } finally {
-
-      setLoading(false);
-    }
-  };
+    };
 
   return (
 
     <div className="min-h-screen flex bg-[#f5f5f5]">
 
-      {/* ================= LEFT SECTION ================= */}
+      {/* ================= LEFT ================= */}
 
       <div className="hidden md:flex w-1/2 bg-[#5b0e0e] text-white items-center justify-center p-16">
 
@@ -260,7 +196,7 @@ function Login() {
           <div className="flex items-center gap-3 justify-center mb-5">
 
             <img
-              src="l.png"
+              src="/l.png"
               alt="nithlogo"
               width={80}
               height={80}
@@ -287,7 +223,7 @@ function Login() {
 
       </div>
 
-      {/* ================= RIGHT SECTION ================= */}
+      {/* ================= RIGHT ================= */}
 
       <div className="flex w-full md:w-1/2 items-center justify-center px-6">
 
@@ -345,15 +281,21 @@ function Login() {
           >
 
             <option value="student">
+
               Student
+
             </option>
 
             <option value="attendant">
+
               Attendant
+
             </option>
 
             <option value="guard">
+
               Security Guard
+
             </option>
 
           </select>
@@ -376,11 +318,11 @@ function Login() {
 
           <p className="text-center text-gray-600 mt-6">
 
-            Don’t have an account?{" "}
+            Don&apos;t have an account?{" "}
 
             <Link
               to="/signup"
-              className="text-[#5b0e0e] font-medium"
+              className="text-[#5b0e0e] font-medium hover:underline"
             >
 
               Signup

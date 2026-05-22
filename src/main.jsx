@@ -10,9 +10,9 @@ import {
 
 import "./index.css";
 
-import App from "./App";
-
 /* ================= AUTH ================= */
+
+import Login from "./auth/Login";
 
 import Signup from "./auth/Signup";
 
@@ -70,7 +70,7 @@ function ErrorPage() {
 
         <button
           onClick={() =>
-            window.location.href = "/"
+            window.location.href = "/signin"
           }
           className="mt-6 bg-[#6d0f16] hover:bg-[#530b11] text-white px-6 py-3 rounded-2xl transition"
         >
@@ -90,11 +90,20 @@ function ErrorPage() {
 const router =
   createBrowserRouter([
 
-    /* ROOT */
+    /* ================= ROOT ================= */
 
     {
       path: "/",
-      element: <App />,
+      element: (
+        <Navigate to="/signin" />
+      ),
+    },
+
+    /* ================= SIGNIN ================= */
+
+    {
+      path: "/signin",
+      element: <Login />,
       errorElement: <ErrorPage />,
     },
 
@@ -126,7 +135,10 @@ const router =
         {
           index: true,
           element: (
-            <Navigate to="pending" />
+            <Navigate
+              to="/attendant/pending"
+              replace
+            />
           ),
         },
 
@@ -159,7 +171,10 @@ const router =
         {
           index: true,
           element: (
-            <Navigate to="dashboard" />
+            <Navigate
+              to="/guard/dashboard"
+              replace
+            />
           ),
         },
 

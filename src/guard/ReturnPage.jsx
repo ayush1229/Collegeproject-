@@ -4,6 +4,10 @@ import React, {
   useState,
 } from "react";
 
+import {
+  apiFetch,
+} from "../utils/api";
+
 export default function ReturnPage() {
 
   const [logs, setLogs] =
@@ -34,46 +38,24 @@ export default function ReturnPage() {
 
       setError("");
 
-      const token =
-        localStorage.getItem("token");
-
-      const role =
-        localStorage.getItem("role");
-
-      const response = await fetch(
-        "http://localhost:5000/api/outpasses/monitor",
-        {
-          method: "GET",
-
-          headers: {
-            token,
-            role,
-          },
-        }
-      );
-
       const result =
-        await response.json();
+        await apiFetch(
+          "/api/outpasses/monitor"
+        );
 
       console.log(result);
 
-      if (!response.ok) {
-
-        throw new Error(
-          result.message ||
-          "Failed to fetch exited students"
-        );
-      }
-
       setLogs(
-        result.data || []
+        result?.data || []
       );
 
     } catch (err) {
 
       console.log(err);
 
-      setError(err.message);
+      setError(
+        err.message
+      );
 
     } finally {
 
@@ -93,44 +75,20 @@ export default function ReturnPage() {
 
     try {
 
-      const token =
-        localStorage.getItem("token");
-
-      const role =
-        localStorage.getItem("role");
-
-      const response = await fetch(
-        "http://localhost:5000/api/outpasses/record-entry",
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-
-            token,
-            role,
-          },
-
-          body: JSON.stringify({
-            outpass_id: id,
-            action: "enter",
-          }),
-        }
-      );
-
       const result =
-        await response.json();
+        await apiFetch(
+          "/api/outpasses/record-entry",
+          {
+            method: "POST",
+
+            body: JSON.stringify({
+              outpass_id: id,
+              action: "enter",
+            }),
+          }
+        );
 
       console.log(result);
-
-      if (!response.ok) {
-
-        throw new Error(
-          result.message ||
-          "Failed to mark return"
-        );
-      }
 
       fetchExitedStudents();
 
@@ -138,7 +96,9 @@ export default function ReturnPage() {
 
       console.log(err);
 
-      alert(err.message);
+      alert(
+        err.message
+      );
     }
   }
 
@@ -154,6 +114,7 @@ export default function ReturnPage() {
         if (
           o.std_status !== "Out"
         ) {
+
           return false;
         }
 
@@ -164,11 +125,15 @@ export default function ReturnPage() {
 
           o.name
             ?.toLowerCase()
-            .includes(q) ||
+            .includes(q)
+
+          ||
 
           o.roll_no
             ?.toLowerCase()
-            .includes(q) ||
+            .includes(q)
+
+          ||
 
           o.room
             ?.toLowerCase()
@@ -176,7 +141,9 @@ export default function ReturnPage() {
 
         const matchHostel =
 
-          hostel === "All" ||
+          hostel === "All"
+
+          ||
 
           o.hostel === hostel;
 
@@ -248,7 +215,7 @@ export default function ReturnPage() {
 
     <div className="space-y-6">
 
-      {/* HEADER */}
+      {/* ================= HEADER ================= */}
 
       <div>
 
@@ -266,7 +233,7 @@ export default function ReturnPage() {
 
       </div>
 
-      {/* FILTER BAR */}
+      {/* ================= FILTER BAR ================= */}
 
       <div className="bg-white border rounded-2xl p-4 flex flex-wrap gap-3">
 
@@ -292,7 +259,9 @@ export default function ReturnPage() {
         >
 
           <option value="All">
+
             All Hostels
+
           </option>
 
           {[...new Set(
@@ -324,11 +293,15 @@ export default function ReturnPage() {
         >
 
           <option value="LATEST">
+
             Latest First
+
           </option>
 
           <option value="OLDEST">
+
             Oldest First
+
           </option>
 
         </select>
@@ -345,7 +318,7 @@ export default function ReturnPage() {
 
       </div>
 
-      {/* EMPTY */}
+      {/* ================= EMPTY ================= */}
 
       {filtered.length === 0 && (
 
@@ -356,7 +329,7 @@ export default function ReturnPage() {
         </div>
       )}
 
-      {/* LIST */}
+      {/* ================= LIST ================= */}
 
       <div className="space-y-5">
 
@@ -397,7 +370,7 @@ export default function ReturnPage() {
 
                 <p className="text-sm text-gray-500 mt-1">
 
-                  {o.roll_no}
+                  {o.roll_no || "No Roll No"}
                   {" • "}
                   {o.department}
 
@@ -422,7 +395,9 @@ export default function ReturnPage() {
 
                   <Info
                     label="Place"
-                    value={o.place_of_visit}
+                    value={
+                      o.place_of_visit
+                    }
                   />
 
                   <Info
@@ -432,7 +407,9 @@ export default function ReturnPage() {
 
                   <Info
                     label="Parent Contact"
-                    value={o.parent_contact}
+                    value={
+                      o.parent_contact
+                    }
                   />
 
                 </div>

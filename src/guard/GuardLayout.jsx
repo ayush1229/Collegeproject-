@@ -1,13 +1,9 @@
 import {
   NavLink,
   Outlet,
-  useNavigate,
 } from "react-router-dom";
 
 export default function GuardLayout() {
-
-  const navigate =
-    useNavigate();
 
   /* ================= LOGOUT ================= */
 
@@ -15,7 +11,8 @@ export default function GuardLayout() {
 
     localStorage.clear();
 
-    window.location.href = "/";
+    window.location.href =
+      "/signin";
   }
 
   return (

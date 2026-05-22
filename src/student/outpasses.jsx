@@ -1,7 +1,15 @@
-import React, { useEffect, useState } from "react";
+import React, {
+  useEffect,
+  useState,
+} from "react";
 
 import CreateOutpass from "./CreateOutpasses";
+
 import CancelOutpass from "./Canceloutpass";
+
+import {
+  apiFetch,
+} from "../utils/api";
 
 export default function OutpassLayout() {
 
@@ -23,6 +31,16 @@ export default function OutpassLayout() {
   const [filter, setFilter] =
     useState("All");
 
+  /* ================= LOGOUT ================= */
+
+  function handleLogout() {
+
+    localStorage.clear();
+
+    window.location.href =
+      "/signin";
+  }
+
   /* ================= FETCH ================= */
 
   async function fetchOutpasses() {
@@ -33,43 +51,12 @@ export default function OutpassLayout() {
 
       setError("");
 
-      const token =
-        localStorage.getItem("token");
-
-      const role =
-        localStorage.getItem("role");
-
-      if (!token || !role) {
-
-        throw new Error(
-          "Please login first"
-        );
-      }
-
-      const response = await fetch(
-        "http://localhost:5000/api/outpasses/my",
-        {
-          method: "GET",
-
-          headers: {
-            token,
-            role,
-          },
-        }
-      );
-
       const data =
-        await response.json();
+        await apiFetch(
+          "/api/outpasses/my"
+        );
 
       console.log(data);
-
-      if (!response.ok) {
-
-        throw new Error(
-          data.message ||
-          "Failed to fetch outpasses"
-        );
-      }
 
       setOutpasses(
         data.data || []
@@ -79,7 +66,9 @@ export default function OutpassLayout() {
 
       console.log(err);
 
-      setError(err.message);
+      setError(
+        err.message
+      );
 
     } finally {
 
@@ -97,9 +86,12 @@ export default function OutpassLayout() {
 
   const filteredOutpasses =
     filter === "All"
+
       ? outpasses
+
       : outpasses.filter(
           (o) =>
+
             o.outp_status
               ?.toLowerCase() ===
             filter.toLowerCase()
@@ -107,39 +99,57 @@ export default function OutpassLayout() {
 
   return (
 
-    <div className="h-screen flex bg-gray-100">
+    <div className="h-screen flex bg-gray-100 overflow-hidden">
 
       {/* ================= SIDEBAR ================= */}
 
-      <aside className="w-72 bg-gradient-to-b from-[#6d0f16] to-[#3b0a0e] text-white flex flex-col shadow-xl">
+      <aside className="w-80 bg-gradient-to-b from-[#6d0f16] to-[#8b0f18] text-white flex flex-col shadow-2xl">
 
-        <div className="p-6 text-xl font-bold border-b border-white/20">
+        {/* HEADER */}
 
-          🎓 Outpass System
+        <div className="p-8 border-b border-white/10">
+
+          <h1 className="text-4xl font-bold tracking-tight">
+
+            🎓 Outpass System
+
+          </h1>
+
+          <p className="text-white/70 mt-2 text-sm">
+
+            Hostel Management Portal
+
+          </p>
 
         </div>
 
-        <nav className="flex-1 p-4 space-y-2">
+        {/* NAVIGATION */}
 
-          <SideItem
-            label="My Outpasses"
+        <nav className="flex-1 p-5 space-y-3">
+
+          <NavItem
+            title="My Outpasses"
             active={active === "my"}
             onClick={() =>
               setActive("my")
             }
           />
 
-          <SideItem
-            label="Create Outpass"
-            active={active === "create"}
+          <NavItem
+            title="Create Outpass"
+            active={
+              active === "create"
+            }
             onClick={() =>
               setActive("create")
             }
           />
 
-          <SideItem
-            label="Cancel Outpass"
-            active={active === "cancel"}
+          <NavItem
+            title="Cancel Outpass"
+            active={
+              active === "cancel"
+            }
             onClick={() =>
               setActive("cancel")
             }
@@ -147,9 +157,18 @@ export default function OutpassLayout() {
 
         </nav>
 
-        <div className="p-4 text-xs text-white/60 border-t border-white/20">
+        {/* LOGOUT */}
 
-          Hostel Management System
+        <div className="p-5 border-t border-white/10">
+
+          <button
+            onClick={handleLogout}
+            className="w-full bg-white text-[#6d0f16] font-semibold py-3 rounded-2xl hover:bg-gray-100 transition"
+          >
+
+            Logout
+
+          </button>
 
         </div>
 
@@ -157,24 +176,24 @@ export default function OutpassLayout() {
 
       {/* ================= MAIN ================= */}
 
-      <main className="flex-1 p-10 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto p-8">
 
-        {/* ================= LOADING ================= */}
+        {/* LOADING */}
 
         {loading && (
 
-          <div className="bg-white p-6 rounded-2xl border shadow text-center">
+          <div className="bg-white rounded-3xl border p-10 text-center text-gray-500 shadow-sm">
 
             Loading outpasses...
 
           </div>
         )}
 
-        {/* ================= ERROR ================= */}
+        {/* ERROR */}
 
         {error && (
 
-          <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-4">
+          <div className="bg-red-50 border border-red-200 text-red-600 rounded-2xl p-4 mb-5">
 
             {error}
 
@@ -188,7 +207,45 @@ export default function OutpassLayout() {
 
           <>
 
-            {/* ================= CARDS ================= */}
+            {/* HEADER */}
+
+            <div className="flex flex-wrap justify-between gap-4 mb-8">
+
+              <div>
+
+                <h2 className="text-4xl font-bold text-[#6d0f16]">
+
+                  Student Dashboard
+
+                </h2>
+
+                <p className="text-gray-500 mt-2 text-lg">
+
+                  Manage your hostel outpasses
+
+                </p>
+
+              </div>
+
+              <div className="bg-white border rounded-3xl px-6 py-5 shadow-sm min-w-[150px]">
+
+                <p className="text-sm text-gray-500">
+
+                  Total Requests
+
+                </p>
+
+                <p className="text-5xl font-bold text-[#6d0f16] mt-2">
+
+                  {outpasses.length}
+
+                </p>
+
+              </div>
+
+            </div>
+
+            {/* CARDS */}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
 
@@ -239,7 +296,7 @@ export default function OutpassLayout() {
 
             </div>
 
-            {/* ================= FILTERS ================= */}
+            {/* FILTERS */}
 
             <div className="flex gap-3 mb-6 flex-wrap">
 
@@ -255,10 +312,12 @@ export default function OutpassLayout() {
                   onClick={() =>
                     setFilter(status)
                   }
-                  className={`px-5 py-2.5 rounded-full text-sm font-medium border transition-all
+                  className={`px-6 py-3 rounded-full text-sm font-semibold border transition-all
                   ${
                     filter === status
+
                       ? "bg-[#6d0f16] text-white border-[#6d0f16] shadow"
+
                       : "bg-white hover:bg-gray-100 border-gray-300"
                   }`}
                 >
@@ -270,7 +329,9 @@ export default function OutpassLayout() {
                     (
                     {
                       status === "All"
+
                         ? outpasses.length
+
                         : outpasses.filter(
                             (o) =>
                               o.outp_status
@@ -287,7 +348,7 @@ export default function OutpassLayout() {
 
             </div>
 
-            {/* ================= TABLE ================= */}
+            {/* TABLE */}
 
             <MyOutpasses
               outpasses={
@@ -301,7 +362,7 @@ export default function OutpassLayout() {
           </>
         )}
 
-        {/* ================= CREATE ================= */}
+        {/* CREATE */}
 
         {active === "create" && (
 
@@ -313,7 +374,7 @@ export default function OutpassLayout() {
           />
         )}
 
-        {/* ================= CANCEL ================= */}
+        {/* CANCEL */}
 
         {active === "cancel" && (
 
@@ -329,7 +390,7 @@ export default function OutpassLayout() {
           />
         )}
 
-        {/* ================= MODAL ================= */}
+        {/* MODAL */}
 
         {selected && (
 
@@ -347,6 +408,34 @@ export default function OutpassLayout() {
   );
 }
 
+/* ================= NAV ITEM ================= */
+
+function NavItem({
+  title,
+  active,
+  onClick,
+}) {
+
+  return (
+
+    <button
+      onClick={onClick}
+      className={`w-full text-left px-5 py-4 rounded-2xl transition-all duration-200 font-medium text-lg
+      ${
+        active
+
+          ? "bg-white text-[#6d0f16] shadow-lg"
+
+          : "hover:bg-white/10 text-white"
+      }`}
+    >
+
+      {title}
+
+    </button>
+  );
+}
+
 /* ================= DASHBOARD CARD ================= */
 
 function DashboardCard({
@@ -357,7 +446,7 @@ function DashboardCard({
 
   return (
 
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition p-6">
+    <div className="bg-white rounded-3xl border border-gray-200 shadow-sm hover:shadow-md transition p-6">
 
       <div className="flex items-start justify-between">
 
@@ -369,7 +458,7 @@ function DashboardCard({
 
           </p>
 
-          <h2 className="text-4xl font-bold text-[#6d0f16] mt-2">
+          <h2 className="text-5xl font-bold text-[#6d0f16] mt-2">
 
             {value}
 
@@ -383,7 +472,7 @@ function DashboardCard({
 
         </div>
 
-        <div className="w-12 h-12 rounded-xl bg-[#f8eaea] flex items-center justify-center text-[#6d0f16] text-xl">
+        <div className="w-14 h-14 rounded-2xl bg-[#f8eaea] flex items-center justify-center text-[#6d0f16] text-2xl">
 
           📄
 
@@ -392,32 +481,6 @@ function DashboardCard({
       </div>
 
     </div>
-  );
-}
-
-/* ================= SIDEBAR ================= */
-
-function SideItem({
-  label,
-  active,
-  onClick,
-}) {
-
-  return (
-
-    <button
-      onClick={onClick}
-      className={`w-full text-left px-4 py-3 rounded-xl transition font-medium
-      ${
-        active
-          ? "bg-white text-[#6d0f16]"
-          : "hover:bg-white/10"
-      }`}
-    >
-
-      {label}
-
-    </button>
   );
 }
 
@@ -435,7 +498,7 @@ function MyOutpasses({
 
     return (
 
-      <div className="bg-white rounded-2xl shadow border p-10 text-center text-gray-500">
+      <div className="bg-white rounded-3xl shadow border p-16 text-center text-gray-500 text-xl">
 
         No outpasses found
 
@@ -445,21 +508,15 @@ function MyOutpasses({
 
   return (
 
-    <div className="bg-white rounded-2xl shadow border overflow-hidden">
-
-      <div className="p-4 font-semibold border-b bg-gray-50">
-
-        My Outpasses
-
-      </div>
+    <div className="bg-white rounded-3xl shadow border overflow-hidden">
 
       <table className="w-full text-sm">
 
-        <thead className="bg-gray-50">
+        <thead className="bg-gray-50 border-b">
 
           <tr>
 
-            <th className="p-4 text-left">
+            <th className="p-5 text-left">
               ID
             </th>
 
@@ -475,7 +532,9 @@ function MyOutpasses({
               Status
             </th>
 
-            <th></th>
+            <th className="text-left">
+              Action
+            </th>
 
           </tr>
 
@@ -487,10 +546,10 @@ function MyOutpasses({
 
             <tr
               key={o.id}
-              className="border-t hover:bg-gray-50"
+              className="border-b hover:bg-gray-50 transition"
             >
 
-              <td className="p-4 font-semibold">
+              <td className="p-5 font-semibold">
 
                 OP-{o.id}
 
@@ -507,24 +566,21 @@ function MyOutpasses({
               <td>
 
                 <span
-                  className={`px-3 py-1 text-xs rounded-full font-medium
+                  className={`px-3 py-1 rounded-full text-xs font-semibold
                   ${
                     o.outp_status
                       ?.toLowerCase() ===
                     "approved"
+
                       ? "bg-green-100 text-green-700"
 
                       : o.outp_status
                           ?.toLowerCase() ===
                         "pending"
+
                       ? "bg-yellow-100 text-yellow-700"
 
-                      : o.outp_status
-                          ?.toLowerCase() ===
-                        "rejected"
-                      ? "bg-red-100 text-red-700"
-
-                      : "bg-gray-200 text-gray-700"
+                      : "bg-red-100 text-red-700"
                   }`}
                 >
 
@@ -534,13 +590,13 @@ function MyOutpasses({
 
               </td>
 
-              <td className="text-right pr-4">
+              <td>
 
                 <button
                   onClick={() =>
                     setSelected(o)
                   }
-                  className="bg-[#6d0f16] text-white px-4 py-1.5 rounded-lg text-xs"
+                  className="bg-[#6d0f16] hover:bg-[#560c12] text-white px-4 py-2 rounded-xl text-xs transition"
                 >
 
                   View
@@ -569,26 +625,26 @@ function OutpassModal({
 
   return (
 
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
 
-      <div className="bg-white w-[700px] rounded-2xl shadow-2xl p-6 relative">
+      <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl p-7 relative">
 
         <button
           onClick={onClose}
-          className="absolute top-3 right-4 text-gray-500 hover:text-black"
+          className="absolute top-5 right-5 text-xl text-gray-500 hover:text-black"
         >
 
           ✕
 
         </button>
 
-        <h2 className="text-xl font-bold text-[#6d0f16] mb-5">
+        <h2 className="text-3xl font-bold text-[#6d0f16] mb-6">
 
           Outpass Details
 
         </h2>
 
-        <div className="grid grid-cols-2 gap-4 text-sm">
+        <div className="grid md:grid-cols-2 gap-5">
 
           <Detail
             label="Type"
@@ -617,14 +673,8 @@ function OutpassModal({
               outpass.departure_datetime
                 ? new Date(
                     outpass.departure_datetime
-                  ).toLocaleString("en-IN", {
-                    day: "2-digit",
-                    month: "long",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : "N/A"
+                  ).toLocaleString("en-IN")
+                : "-"
             }
           />
 
@@ -634,14 +684,8 @@ function OutpassModal({
               outpass.arrival_datetime
                 ? new Date(
                     outpass.arrival_datetime
-                  ).toLocaleString("en-IN", {
-                    day: "2-digit",
-                    month: "long",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : "N/A"
+                  ).toLocaleString("en-IN")
+                : "-"
             }
           />
 
@@ -669,17 +713,17 @@ function Detail({
 
   return (
 
-    <div className="bg-gray-50 border rounded-xl p-3">
+    <div className="bg-gray-50 border rounded-2xl p-4">
 
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-gray-500 mb-1">
 
         {label}
 
       </p>
 
-      <p className="font-semibold text-sm">
+      <p className="font-semibold text-sm text-gray-800 break-words">
 
-        {value || "N/A"}
+        {value || "-"}
 
       </p>
 
