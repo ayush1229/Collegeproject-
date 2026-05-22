@@ -1,12 +1,5 @@
 /**
  * api/allocation.api.js — Allocation state and preference submission
- *
- * Backend: GET /allocation/status/:studentId
- * Returns: { phase, group, batch, submission, isAllocated, isPenalized, ... }
- *
- * Frontend useAllocationState expects:
- *   { phase, hasSquad, isLeader, batchActive, isAllocated, isPenalized,
- *     waitingForBatch, submitted, groupId, batchId, roundNumber, hostelId }
  */
 import client from './client.js';
 
@@ -16,35 +9,51 @@ import client from './client.js';
  */
 function normaliseStatus(raw) {
   const r = raw.result ?? raw;
-  const phase = r.hostel_phase ?? 'LOBBY';
+  const phase = r.hostel_phase ?? 'ADMIN_MODE';
+
+  // Derive batch_is_active
+  const batchIsActive = r.batch_is_active ?? (r.batch_status === 'ACTIVE');
 
   return {
-    // Phase (maps directly to backend system_phase_enum)
+    // Phase
     phase,
+    hostelId:            r.hostel_id ?? null,
+    hostelName:          r.hostel_name ?? null,
+    isPaused:            r.is_paused ?? false,
+    allocationDate:      r.allocation_date ?? null,
+    lobbyOpensAt:        r.lobby_opens_at ?? null,
 
     // Squad / group state
-    hasSquad:       !!r.group_id,
-    groupId:        r.group_id   ?? null,
-    groupStatus:    r.group_status ?? null,
-    isLeader:       r.is_leader  ?? false,
+    hasSquad:            !!r.group_id,
+    groupId:             r.group_id ?? null,
+    groupStatus:         r.group_status ?? null,
+    isLeader:            r.is_leader ?? false,
+    groupRank:           r.group_rank ?? null,
+    rolloverCount:       r.rollover_count ?? 0,
+    cgpa:                r.cgpa ?? null,
+    individualRank:      r.individual_rank ?? null,
 
     // Batch state
-    hostelId:       r.hostel_id  ?? null,
-    batchId:        r.batch_id   ?? null,
-    batchNumber:    r.batch_number ?? null,
-    batchActive:    phase === 'LIVE_BATCHES',
-    waitingForBatch: phase === 'SOFT_LOCK' || (phase === 'LIVE_BATCHES' && !r.batch_is_active),
-    roundNumber:    r.current_round ?? null,
+    batchId:             r.batch_id ?? null,
+    batchNumber:         r.batch_number ?? r.batchNumber ?? null,
+    batchActive:         batchIsActive,
+    batchStartTime:      r.batch_start_time ?? null,
+    batchEndTime:        r.batch_end_time ?? null,
+    waitingForBatch:     phase === 'SOFT_LOCK' || (phase === 'LIVE_BATCHES' && !batchIsActive),
+    roundNumber:         r.current_round ?? null,
 
     // Submission state
-    submitted:      r.submitted_this_round ?? false,
-    isRollover:     r.is_rollover_priority ?? false,
-    groupRank:      r.group_rank ?? null,
+    submitted:           r.submitted_this_round ?? false,
+    isRollover:          r.is_rollover_priority ?? false,
 
     // Outcome
-    isAllocated:    r.is_allotted ?? false,
-    isPenalized:    r.group_status === 'PENALIZED',
-    allocatedRoomId: r.allocated_room_id ?? null,
+    isAllocated:         r.is_allotted ?? false,
+    isPenalized:         r.group_status === 'PENALIZED',
+    allocatedRoomId:     r.allocated_room_id ?? null,
+    allocatedRoomNumber: r.allocated_room_number ?? null,
+    allocatedRoomType:   r.allocated_room_type ?? null,
+    roommates:           r.roommates ?? [],
+    assignedBy:          r.assigned_by ?? null,
   };
 }
 
@@ -77,6 +86,19 @@ export const getCurrentBatch = async (studentId) => {
 export const submitPreferences = async (payload) => {
   const data = await client.post('/allocation/submit-preferences', payload);
   return data.result ?? data;
+};
+
+// DEV ONLY
+export const triggerDevPhase = async (hostelId, targetPhase) => {
+  return await client.post('/allocation/dev/advance-phase', { hostelId, targetPhase });
+};
+
+export const triggerResetPhase = async (hostelId) => {
+  return await client.post('/allocation/dev/reset-phase', { hostelId });
+};
+
+export const getBatches = async (hostelId) => {
+  return await client.get(`/allocation/batches/${hostelId}`);
 };
 
 /** Get the submission history for a batch. */

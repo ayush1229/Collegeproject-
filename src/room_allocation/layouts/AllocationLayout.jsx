@@ -21,9 +21,10 @@ const UserIcon   = () => <svg width="26" height="26" viewBox="0 0 24 24" fill="n
 const NAV_ITEMS = [
   { label: 'Overview',  Icon: GridIcon,  to: null                      },
   { label: 'My Squad',  Icon: SquadIcon, to: '/allocation/squad'        },
-  { label: 'Room Grid', Icon: RoomIcon,  to: null                      },
+  { label: 'Room Grid', Icon: RoomIcon,  to: '/allocation/room-grid'    },
   { label: 'Timeline',  Icon: ClockIcon, to: '/allocation/waiting-room' },
   { label: 'History',   Icon: HelpIcon,  to: '/allocation/history'      },
+  { label: 'Admin',     Icon: CogIcon,   to: '/allocation/admin'        },
   { label: 'Support',   Icon: HelpIcon,  to: null                      },
 ];
 
