@@ -17,6 +17,8 @@ import SelectionLockedPage   from './room_allocation/pages/SelectionLockedPage'
 import AllocationResultsPage from './room_allocation/pages/AllocationResultsPage'
 import PenaltyPage           from './room_allocation/pages/PenaltyPage'
 import AllocationHistoryPage from './room_allocation/pages/AllocationHistoryPage'
+import WardenAllocationPage from './room_allocation/pages/WardenAllocationPage'
+
 
 const router = createBrowserRouter([
   // App routes
@@ -35,6 +37,7 @@ const router = createBrowserRouter([
   { path: '/allocation/results',         element: <AllocationResultsPage />              },
   { path: '/allocation/penalty',         element: <PenaltyPage />                        },
   { path: '/allocation/history',         element: <AllocationHistoryPage />              },
+  { path: '/warden', element: <WardenAllocationPage /> },
 ]);
 
 createRoot(document.getElementById('root')).render(
