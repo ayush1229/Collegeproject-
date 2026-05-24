@@ -1,123 +1,159 @@
 /**
- * sockets/allocation.socket.js — Socket.IO singleton
+ * sockets/allocation.socket.js - Pusher singleton
  *
  * Architecture rules:
  *   - connect() is called ONCE by AllocationLayout on mount.
  *   - disconnect() is called ONCE by AllocationLayout on unmount.
  *   - joinHostel(hostelId) is called whenever the active hostel changes.
- *   - Individual hooks ONLY call .on() / .off() — never connect/disconnect.
- *
- * This avoids all three React lifecycle bugs:
- *   1. Strict Mode remount: only the Layout unmounts/remounts, not every hook.
- *   2. Listener accumulation: hooks register named handlers and clean them up.
- *   3. Multi-room: joinHostel() explicitly leaves the old room and joins the new one.
+ *   - Individual hooks ONLY call .on() / .off() - never connect/disconnect.
  */
-
-import { io } from 'socket.io-client';
+import Pusher from 'pusher-js';
 import { WS_EVENTS } from './events.js';
 
-// Matches hostel_backend port (5000). Override with VITE_WS_URL if needed.
-const WS_URL = import.meta.env.VITE_WS_URL ?? 'http://localhost:5000';
+const PUSHER_KEY = import.meta.env.VITE_PUSHER_KEY;
+const PUSHER_CLUSTER = import.meta.env.VITE_PUSHER_CLUSTER;
+const GLOBAL_CHANNEL = import.meta.env.VITE_PUSHER_GLOBAL_CHANNEL ?? 'allocation-global';
+
+function hostelChannelName(hostelId) {
+    return `hostel-${hostelId}`;
+}
 
 class AllocationSocket {
     constructor() {
-        this._socket = io(WS_URL, {
-            transports:          ['websocket', 'polling'],
-            reconnectionAttempts: 10,
-            reconnectionDelay:    2000,
-            autoConnect:          false // Wait for AllocationLayout to connect
-        });
-        this._hostelId  = null;
-
-        this._socket.on('connect', () => {
-            console.info('[AllocationSocket] Connected:', this._socket.id);
-            // Rejoin the hostel room after reconnection
-            if (this._hostelId) {
-                this._socket.emit('join_hostel', { hostelId: this._hostelId });
-            }
-        });
-
-        this._socket.on('connect_error', (err) => {
-            // Log but never throw — socket errors must not crash the app
-            console.warn('[AllocationSocket] Connection error:', err.message);
-        });
-
-        this._socket.on('disconnect', (reason) => {
-            console.info('[AllocationSocket] Disconnected:', reason);
-        });
+        this._pusher = null;
+        this._globalChannel = null;
+        this._hostelChannel = null;
+        this._hostelId = null;
+        this._handlers = new Map();
     }
 
-    // ── Lifecycle (called by AllocationLayout only) ───────────────
-
-    /**
-     * Connect to the backend Socket.IO server.
-     * Safe to call once on layout mount. Does nothing if already connected.
-     */
     connect() {
-        if (!this._socket.connected) {
-            this._socket.connect();
+        if (this._pusher) return this;
+
+        if (!PUSHER_KEY || !PUSHER_CLUSTER) {
+            console.warn('[AllocationSocket] Missing VITE_PUSHER_KEY or VITE_PUSHER_CLUSTER. Realtime disabled.');
+            return this;
         }
+
+        this._pusher = new Pusher(PUSHER_KEY, {
+            cluster: PUSHER_CLUSTER,
+        });
+
+        this._pusher.connection.bind('connected', () => {
+            console.info('[AllocationSocket] Connected to Pusher');
+        });
+
+        this._pusher.connection.bind('error', (err) => {
+            const msg = err?.error?.message ?? 'Unknown Pusher error';
+            console.warn('[AllocationSocket] Connection error:', msg);
+        });
+
+        this._pusher.connection.bind('disconnected', () => {
+            console.info('[AllocationSocket] Disconnected from Pusher');
+        });
+
+        this._globalChannel = this._pusher.subscribe(GLOBAL_CHANNEL);
+        this._bindAllHandlersToChannel(this._globalChannel);
+
+        if (this._hostelId) {
+            this._subscribeHostelChannel(this._hostelId);
+        }
+
         return this;
     }
 
-    /**
-     * Switch to a different hostel room.
-     * Leaves the previous room, joins the new one.
-     * Safe to call even before the socket is fully connected —
-     * the 'connect' handler above will emit join_hostel on reconnect.
-     */
     joinHostel(hostelId) {
-        if (hostelId === this._hostelId) return this; // no-op
+        if (hostelId === this._hostelId) return this;
 
-        // Leave previous room
-        if (this._hostelId && this._socket?.connected) {
-            this._socket.emit('leave_hostel', { hostelId: this._hostelId });
+        if (this._hostelChannel && this._pusher) {
+            this._unbindAllHandlersFromChannel(this._hostelChannel);
+            this._pusher.unsubscribe(this._hostelChannel.name);
+            this._hostelChannel = null;
         }
 
         this._hostelId = hostelId;
 
-        // Join new room (or queue for reconnect handler)
-        if (this._socket?.connected && hostelId) {
-            this._socket.emit('join_hostel', { hostelId });
+        if (this._pusher && hostelId) {
+            this._subscribeHostelChannel(hostelId);
         }
 
         return this;
     }
 
-    /**
-     * Disconnect cleanly. Called only by AllocationLayout on unmount.
-     */
     disconnect() {
-        if (this._socket && this._socket.connected) {
-            this._socket.disconnect();
+        if (!this._pusher) return;
+
+        if (this._hostelChannel) {
+            this._unbindAllHandlersFromChannel(this._hostelChannel);
         }
+
+        if (this._globalChannel) {
+            this._unbindAllHandlersFromChannel(this._globalChannel);
+        }
+
+        this._pusher.disconnect();
+        this._pusher = null;
+        this._globalChannel = null;
+        this._hostelChannel = null;
     }
 
-    // ── Event subscription (used by hooks) ───────────────────────
-
-    /**
-     * Subscribe to a backend event.
-     * @param {string}   event   — one of WS_EVENTS
-     * @param {function} handler — receives the payload
-     * @returns cleanup function for useEffect return
-     */
     on(event, handler) {
-        this._socket?.on(event, handler);
-        return () => this._socket?.off(event, handler);
+        if (!this._handlers.has(event)) {
+            this._handlers.set(event, new Set());
+        }
+
+        this._handlers.get(event).add(handler);
+
+        if (this._globalChannel) {
+            this._globalChannel.bind(event, handler);
+        }
+
+        if (this._hostelChannel) {
+            this._hostelChannel.bind(event, handler);
+        }
+
+        return () => this.off(event, handler);
     }
 
-    /**
-     * Unsubscribe a specific handler.
-     */
     off(event, handler) {
-        this._socket?.off(event, handler);
+        const listeners = this._handlers.get(event);
+        if (listeners) {
+            listeners.delete(handler);
+            if (listeners.size === 0) {
+                this._handlers.delete(event);
+            }
+        }
+
+        this._globalChannel?.unbind(event, handler);
+        this._hostelChannel?.unbind(event, handler);
     }
 
     get isConnected() {
-        return this._socket?.connected ?? false;
+        return this._pusher?.connection?.state === 'connected';
+    }
+
+    _subscribeHostelChannel(hostelId) {
+        const channel = this._pusher.subscribe(hostelChannelName(hostelId));
+        this._hostelChannel = channel;
+        this._bindAllHandlersToChannel(channel);
+    }
+
+    _bindAllHandlersToChannel(channel) {
+        for (const [event, handlers] of this._handlers.entries()) {
+            for (const handler of handlers) {
+                channel.bind(event, handler);
+            }
+        }
+    }
+
+    _unbindAllHandlersFromChannel(channel) {
+        for (const [event, handlers] of this._handlers.entries()) {
+            for (const handler of handlers) {
+                channel.unbind(event, handler);
+            }
+        }
     }
 }
 
-// One instance shared across the entire allocation module
 export const allocationSocket = new AllocationSocket();
 export { WS_EVENTS };
