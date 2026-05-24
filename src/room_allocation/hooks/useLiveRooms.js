@@ -20,7 +20,9 @@ export function useLiveRooms(hostelId) {
     try {
       setLoading(true);
       setError(null);
-      const data = await getAvailableRooms(hostelId);
+      const userStr = localStorage.getItem('user');
+      const studentId = userStr ? JSON.parse(userStr).id : null;
+      const data = await getAvailableRooms(hostelId, studentId);
       setRooms(data);
     } catch (err) {
       setError(err);

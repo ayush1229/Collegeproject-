@@ -11,7 +11,7 @@ function resolveRoute(state) {
   if (!state)                                       return null;
   if (state.isPenalized)                            return ROUTES.PENALTY;
   if (state.groupStatus === 'SHATTERED')            return ROUTES.SHATTERED;
-  if (state.isAllocated)                            return ROUTES.RESULTS;
+  if (state.isAllocated || state.phase === 'FINAL_SWEEP') return ROUTES.RESULTS;
   if (state.submitted)                              return ROUTES.LOCKED;
   if (state.batchActive)                            return ROUTES.LIVE;
   if (state.waitingForBatch)                        return ROUTES.WAITING_ROOM;
@@ -36,7 +36,6 @@ export default function AllocationGatewayPage() {
 
       // Pre-lobby phases — don't redirect, show PreLobbyPage
       if (phase === 'ADMIN_MODE') return;
-      if (phase === 'FINAL_SWEEP' && !state.isAllocated) return;
 
       const target = resolveRoute(state);
       if (!target) return;

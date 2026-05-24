@@ -47,6 +47,8 @@ export default function AllocationResultsPage() {
                   ? 'The allocation process has not started yet. Please wait until your batch becomes active.' 
                   : isLive 
                   ? 'Allocations are currently in progress. Your result will appear here once your batch has been processed.'
+                  : allocationState?.phase === 'FINAL_SWEEP'
+                  ? 'The final sweep is currently processing. Unallocated students are being assigned to the remaining beds.'
                   : 'Your allocation result is still pending. Please check back later.'}
               </p>
             </div>

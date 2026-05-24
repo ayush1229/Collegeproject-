@@ -41,8 +41,9 @@ function normaliseRoom(r) {
 /**
  * Fetch the live room map for a hostel (available rooms only).
  */
-export const getAvailableRooms = async (hostelId) => {
-  const data = await client.get(`/allocation/rooms/${hostelId}`);
+export const getAvailableRooms = async (hostelId, studentId = null) => {
+  const url = studentId ? `/allocation/rooms/${hostelId}?studentId=${studentId}` : `/allocation/rooms/${hostelId}`;
+  const data = await client.get(url);
   const rooms = data.rooms ?? data.data ?? data ?? [];
   return rooms.map(normaliseRoom);
 };

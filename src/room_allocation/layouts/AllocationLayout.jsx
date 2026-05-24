@@ -1,7 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import TopNav from '../components/shared/TopNav';
 import { allocationSocket } from '../sockets/allocation.socket.js';
+import { useAllocationState } from '../hooks/useAllocationState';
+import PreferenceBuilder from '../components/live_selection/PreferenceBuilder';
 
 /* ── Icons ────────────────────────────────────────────────────── */
 const GridIcon   = () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/></svg>;
@@ -61,6 +63,14 @@ export default function AllocationLayout({
   useEffect(() => {
     if (hostelId) allocationSocket.joinHostel(hostelId);
   }, [hostelId]);
+
+  const userStr = localStorage.getItem('user');
+  const studentId = userStr ? JSON.parse(userStr).id : null;
+  const { state: allocState } = useAllocationState(studentId);
+  const [showPopup, setShowPopup] = useState(true);
+
+  const isLiveTurn = allocState?.batchActive && !allocState?.submitted && !allocState?.isAllocated;
+  const displayPopup = isLiveTurn && showPopup;
 
   return (
     <div className="flex flex-col min-h-screen bg-canvas">
@@ -126,8 +136,20 @@ export default function AllocationLayout({
         </aside>
 
         {/* ── Main content ─────────────────────────────────────── */}
-        <main className="flex-1 min-w-0 p-7 overflow-y-auto">
+        <main className="flex-1 min-w-0 p-7 overflow-y-auto relative">
           {children}
+
+          {/* ── Global Live Turn Pop-up ────────────────────────── */}
+          {displayPopup && (
+            <div className="absolute inset-0 bg-canvas z-50 overflow-y-auto">
+              <PreferenceBuilder 
+                studentId={studentId} 
+                allocationState={allocState} 
+                isLiveMode={true} 
+                onClose={() => setShowPopup(false)}
+              />
+            </div>
+          )}
         </main>
       </div>
     </div>
