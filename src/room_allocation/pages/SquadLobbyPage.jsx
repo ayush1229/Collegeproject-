@@ -475,11 +475,11 @@ export default function SquadLobbyPage() {
 
   return (
     <AllocationLayout phase="Selection Phase" batch={state.batchNumber ? `Batch ${state.batchNumber}` : "Batch TBD"} hostelId={state.hostelId}>
-      <div className="flex flex-col gap-5 h-full">
+      <div className="flex flex-col gap-5 h-[calc(100vh-120px)]">
 
         <PhaseBanner state={state} />
 
-        <div className="grid grid-cols-[280px_1fr_260px] gap-5 items-start h-full">
+        <div className="grid grid-cols-[280px_1fr_260px] gap-5 flex-1 min-h-0">
           {/* LEFT */}
           <SquadPanel 
             state={state} 
@@ -490,7 +490,7 @@ export default function SquadLobbyPage() {
           />
 
           {/* CENTER */}
-          <div className="flex flex-col gap-5 h-full">
+          <div className="flex flex-col gap-5 min-h-0 h-full">
             <InviteInbox pendingRequests={pendingRequests} onAccept={handleAccept} onReject={handleReject} />
             <CenterBottomPanel state={state} publicSquads={publicSquads} pendingRequests={pendingRequests} onApplyToSquad={handleApplyToSquad} />
           </div>
