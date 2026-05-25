@@ -1,95 +1,74 @@
-import { API_BASE_URL } from './config';
+/**
+ * api/squad.api.js - Group/Squad REST calls
+ *
+ * Maps frontend "squad" terminology to backend "group" endpoints.
+ * All functions return parsed JSON from api/client.js.
+ */
+import client from './client.js';
 
-const BASE = `${API_BASE_URL}/api/groups`;
+/** Create a new squad. `leaderId` = current user's student ID. */
+export const createSquad = (studentId) =>
+  client.post('/groups/create', { leaderId: studentId });
 
-export const createSquad = async (name) => {
-  try {
-    const res = await fetch(`${BASE}/create`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, primaryApplicantId: 3 }),
-    });
-    const data = await res.json();
-    return data;
-  } catch {
-    return { success: false };
-  }
+/** Leave the current squad. */
+export const leaveSquad = (studentId) =>
+  client.post('/groups/leave', { studentId });
+
+/** Transfer leader title to another squad member. */
+export const transferLeadership = (groupId, newLeaderId) =>
+  client.post('/groups/transfer-leadership', { groupId, newLeaderId });
+
+/** Kick a member from the group. */
+export const kickMember = (groupId, leaderId, memberId) =>
+  client.post('/groups/kick', { groupId, leaderId, memberId });
+
+/**
+ * Accept an incoming invite/request.
+ * Backend endpoint: POST /groups/accept-invite
+ */
+export const acceptInvite = (requestId) =>
+  client.post('/groups/accept-invite', { requestId });
+
+/**
+ * Reject an incoming invite/request.
+ * Current backend uses the same endpoint with a status field.
+ */
+export const rejectInvite = (requestId) =>
+  client.post('/groups/accept-invite', { requestId, status: 'REJECTED' });
+
+/**
+ * Send an invite to a student (leader -> student: INVITE_FROM_PRIMARY)
+ * or a student applying to a group (APPLICATION_FROM_STUDENT).
+ */
+export const sendInvite = ({ groupId, studentId, requestType = 'INVITE_FROM_PRIMARY' }) =>
+  client.post('/groups/invite', { groupId, studentId, requestType });
+
+/** Get all pending group requests for inbox/sent state. */
+export const getPendingRequests = () =>
+  client.get('/groups/requests');
+
+/** Get the members of a specific group. */
+export const getGroupMembers = (groupId) =>
+  client.get(`/groups/${groupId}/members`);
+
+/** Get all groups (used for browse/public squads view). */
+export const getAllGroups = () =>
+  client.get('/groups/');
+
+/** Search students by name or roll number (privacy-safe response). */
+export const searchStudents = (q) => {
+  if (!q || q.length < 2) return Promise.resolve({ students: [] });
+  return client.get(`/students/search?q=${encodeURIComponent(q)}`);
 };
 
-export const leaveSquad = async () => {
-  try {
-    const res = await fetch(`${BASE}/leave`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ studentId: 3 }),
-    });
-    return await res.json();
-  } catch {
-    return { success: false };
-  }
-};
+/** Get group members with cgpa for lobby/member cards. */
+export const getGroupMembersWithCgpa = (groupId) =>
+  client.get(`/students/group-members/${groupId}`);
 
-export const transferLeadership = async (memberId) => {
-  try {
-    const res = await fetch(`${BASE}/transfer-leadership`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ currentLeaderId: 3, newLeaderId: memberId }),
-    });
-    return await res.json();
-  } catch {
-    return { success: false };
-  }
-};
+/** Dev helper for quickly filling a squad. */
+export const addBotToSquad = (groupId) =>
+  client.post('/allocation/dev/add-bot', { groupId });
 
-export const acceptInvite = async (inviteId) => {
-  try {
-    const res = await fetch(`${BASE}/accept-invite`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ inviteId, studentId: 3 }),
-    });
-    return await res.json();
-  } catch {
-    return { success: false };
-  }
-};
-
-export const rejectInvite = async (inviteId) => {
-  try {
-    const res = await fetch(`${BASE}/reject-invite`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ inviteId }),
-    });
-    return await res.json();
-  } catch {
-    return { success: false };
-  }
-};
-
-export const sendInvite = async (userId) => {
-  try {
-    const res = await fetch(`${BASE}/invite`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ fromStudentId: 3, toStudentId: userId }),
-    });
-    return await res.json();
-  } catch {
-    return { success: false };
-  }
-};
-
-export const removeMember = async (memberId) => {
-  try {
-    const res = await fetch(`${BASE}/remove-member`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ leaderId: 3, memberId }),
-    });
-    return await res.json();
-  } catch {
-    return { success: false };
-  }
-};
+/** Backward-compatible alias used by some older screens. */
+export const removeMember = (memberId, groupId, leaderId) =>
+  kickMember(groupId, leaderId, memberId);

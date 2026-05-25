@@ -1,41 +1,52 @@
-import { API_BASE_URL } from './config';
+/**
+ * api/results.api.js — Final allocation result for a student
+ *
+ * Uses GET /allocation/status/:studentId (same endpoint as state).
+ * When isAllocated=true, the response includes room + roommates.
+ */
+import client from './client.js';
 
-export const getFinalAllocation = async () => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/allocation/status/3`);
-    const data = await res.json();
-    const result = data.result;
+/**
+ * Get the final allocation result for the current student.
+ * Returns null if not yet allocated.
+ */
+export const getFinalAllocation = async (studentId) => {
+  if (!studentId) return null;
+  const data = await client.get(`/allocation/status/${studentId}`);
+  const r = data.result ?? data;
 
-    return {
-      status: result?.allotted ? 'ALLOCATED' : 'PENDING_MIGRATION',
-      room: result?.room ? {
-        id: result.room.room_number ?? result.room.id,
-        block: result.room.room_number?.split('_')[0] ?? 'Block A',
-        floor: 1,
-        type: result.room.room_type ?? '3-Seater',
-        hostel: result.room.hostel_id ?? 'Hostel Block',
-      } : null,
-      method: 'Preference Match',
-      round: 1,
-      batch: 'Batch #12',
-      allocatedAt: new Date().toISOString(),
-      roommates: [],
-      moveInWindow: { start: '2026-05-15', end: '2026-05-20' },
-    };
-  } catch {
-    return {
-      status: 'PENDING_MIGRATION',
-      room: null,
-      method: 'Preference Match',
-      round: 1,
-      batch: 'Batch #12',
-      allocatedAt: new Date().toISOString(),
-      roommates: [],
-      moveInWindow: { start: '2026-05-15', end: '2026-05-20' },
-    };
-  }
+  if (!r.is_allotted || !r.allocated_room_id) return null;
+
+  return {
+    status:      'ALLOCATED',
+    room: {
+      id:      r.allocated_room_id,
+      roomNo:  r.room_number ?? null,
+      block:   r.room_block  ?? null,
+      floor:   r.room_floor  ?? null,
+      type:    r.room_type   ?? null,
+      hostel:  r.hostel_name ?? null,
+    },
+    method:      r.assigned_by ?? 'ALGORITHM',
+    round:       r.allocated_round ?? null,
+    batch:       r.allocated_batch ?? null,
+    allocatedAt: r.allocated_at    ?? null,
+    roommates:   (r.roommates ?? []).map((rm) => ({
+      id:       rm.id,
+      name:     rm.name,
+      cgpa:     rm.cgpa,
+      initials: rm.name?.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() ?? '??',
+    })),
+  };
 };
 
-export const downloadAllotmentLetter = async () => {
+/**
+ * Download the allotment letter PDF.
+ * Backend should return a signed URL or stream.
+ * TODO: implement when backend adds this endpoint.
+ */
+export const downloadAllotmentLetter = async (studentId) => {
+  // Placeholder — endpoint doesn't exist yet
+  console.warn('[results.api] downloadAllotmentLetter: endpoint not implemented');
   return { url: '#' };
 };

@@ -1,17 +1,10 @@
-export const WS_EVENTS = {
-  // Room events
-  ROOM_UPDATED:        'room:updated',
-  ROOM_LOCKED:         'room:locked',
-  // Round events
-  ROUND_STARTED:       'round:started',
-  ROUND_ENDED:         'round:ended',
-  // Batch events
-  BATCH_ACTIVATED:     'batch:activated',
-  BATCH_COMPLETE:      'batch:complete',
-  // Allocation events
-  ALLOCATION_COMPLETE: 'allocation:complete',
-  ROLLOVER_TRIGGERED:  'allocation:rollover',
-  SHATTER_TRIGGERED:   'allocation:shatter',
-  // Timer events
-  TIMER_SYNC:          'timer:sync',
-};
+/**
+ * constants/websocketEvents.js
+ *
+ * Re-exports WS_EVENTS from sockets/events.js so existing imports
+ * like `import { WS_EVENTS } from '../constants/websocketEvents'`
+ * continue to work after the socket refactor.
+ *
+ * Single source of truth is sockets/events.js — do not add new events here.
+ */
+export { WS_EVENTS } from '../sockets/events.js';

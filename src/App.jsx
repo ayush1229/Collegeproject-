@@ -1,126 +1,170 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
-import { NavLink } from 'react-router'
+import {
+  useEffect,
+  useState,
+} from "react";
 
-function App() {
-  const [count, setCount] = useState(0)
+import {
+  Navigate,
+} from "react-router-dom";
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
+import Login from "./auth/Login";
+
+export default function App() {
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [isLoggedIn, setIsLoggedIn] =
+    useState(false);
+
+  const [role, setRole] =
+    useState("");
+
+  /* ================= AUTH CHECK ================= */
+
+  useEffect(() => {
+
+    try {
+
+      const token =
+        localStorage.getItem("token");
+
+      const storedRole =
+        localStorage.getItem("role");
+
+      if (
+        token &&
+        storedRole
+      ) {
+
+        setIsLoggedIn(true);
+
+        setRole(storedRole);
+      }
+
+    } catch (err) {
+
+      console.log(err);
+    }
+
+    setLoading(false);
+
+  }, []);
+
+  /* ================= LOADING ================= */
+
+  if (loading) {
+
+    return (
+
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+
+        <div className="text-center">
+
+          <div className="w-14 h-14 border-4 border-[#6d0f16] border-t-transparent rounded-full animate-spin mx-auto"></div>
+
+          <p className="mt-5 text-gray-600 font-medium">
+
+            Loading Application...
+
           </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-        <NavLink to="/sample">sample</NavLink>
-        <NavLink to="/complaint">complaint</NavLink>
-        <NavLink to="/outpass">outpass</NavLink>
-      </section>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      </div>
+    );
+  }
+
+  /* ================= LOGIN ================= */
+
+  if (!isLoggedIn) {
+
+    return (
+
+      <Login
+        setIsLoggedIn={
+          setIsLoggedIn
+        }
+        setRole={setRole}
+      />
+    );
+  }
+
+  /* ================= ROLE REDIRECTS ================= */
+
+  switch (role) {
+
+    case "student":
+
+      return (
+        <Navigate
+          to="/student"
+          replace
+        />
+      );
+
+    case "attendant":
+
+      return (
+        <Navigate
+          to="/attendant"
+          replace
+        />
+      );
+
+    case "guard":
+
+      return (
+        <Navigate
+          to="/guard"
+          replace
+        />
+      );
+
+    default:
+
+      /* INVALID ROLE */
+
+      localStorage.removeItem(
+        "token"
+      );
+
+      localStorage.removeItem(
+        "role"
+      );
+
+      return (
+
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
+
+          <div className="bg-white border shadow-xl rounded-3xl p-10 max-w-md text-center">
+
+            <h1 className="text-4xl font-bold text-red-600">
+
+              Invalid Role
+
+            </h1>
+
+            <p className="text-gray-500 mt-3">
+
+              Your session role is invalid or expired.
+
+            </p>
+
+            <button
+              onClick={() =>
+                window.location.reload()
+              }
+              className="mt-6 bg-[#6d0f16] hover:bg-[#530b11] text-white px-6 py-3 rounded-2xl transition"
+            >
+
+              Login Again
+
+            </button>
+
+          </div>
+
+        </div>
+      );
+  }
 }
-
-export default App

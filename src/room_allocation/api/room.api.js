@@ -1,40 +1,62 @@
-import { API_BASE_URL } from './config';
+/**
+ * api/room.api.js - Room data REST calls
+ *
+ * Supports both legacy snake_case and current camelCase backend payloads.
+ */
+import client from './client.js';
 
-export const getAvailableRooms = async () => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/preferences/rooms`);
-    const data = await res.json();
-    return data.rooms.map(room => ({
-  id: room.id,
-  roomNumber: room.room_number,  // ye add karo
-  block: room.room_number?.split('_')[0] ?? 'N/A',
-  floor: 1,
-  type: room.room_type ?? '3-Seater',
-  total: room.max_capacity,
-  occupied: room.current_occupancy,
-}));
-  } catch {
-    return [];
-  }
+/**
+ * Parse block and floor from room number, e.g. "C-302" -> block:"C", floor:3.
+ */
+function normaliseRoom(r) {
+  const roomNumber = r.roomNumber ?? r.room_number ?? String(r.id ?? '');
+  const capacity = Number(r.capacity ?? r.max_capacity ?? r.maxCapacity ?? 0);
+  const occupancy = Number(r.occupancy ?? r.current_occupancy ?? r.currentOccupancy ?? 0);
+
+  const parts = roomNumber.split('-');
+  const block = parts[0] ?? '?';
+  const num = parts[1] ?? '';
+  const floor = num.length >= 1 ? parseInt(num[0], 10) : 0;
+
+  return {
+    id: r.id,
+    roomNo: roomNumber,
+    block,
+    floor,
+    type:
+      capacity === 4
+        ? '4-Seater'
+        : capacity === 3
+          ? '3-Seater'
+          : capacity === 2
+            ? '2-Seater'
+            : '1-Seater',
+    total: capacity,
+    occupied: occupancy,
+    available: r.available ?? occupancy < capacity,
+    remainingBeds: r.remainingBeds ?? Math.max(0, capacity - occupancy),
+  };
+}
+
+/**
+ * Fetch the live room map for a hostel (available rooms only).
+ */
+export const getAvailableRooms = async (hostelId, studentId = null) => {
+  const url = studentId ? `/allocation/rooms/${hostelId}?studentId=${studentId}` : `/allocation/rooms/${hostelId}`;
+  const data = await client.get(url);
+  const rooms = data.rooms ?? data.data ?? data ?? [];
+  return rooms.map(normaliseRoom);
 };
 
+/** Get full details of one room. */
 export const getRoomDetails = async (id) => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/preferences/rooms`);
-    const data = await res.json();
-    return data.rooms.find(r => r.id === id) ?? { id };
-  } catch {
-    return { id };
-  }
+  const data = await client.get(`/rooms/${id}`);
+  return normaliseRoom(data.room ?? data);
 };
 
+/** Get occupancy for one room (lightweight). */
 export const getRoomOccupancy = async (id) => {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/preferences/rooms`);
-    const data = await res.json();
-    const room = data.rooms.find(r => r.id === id);
-    return { id, occupied: room?.current_occupancy ?? 0, total: room?.max_capacity ?? 4 };
-  } catch {
-    return { id, occupied: 0, total: 4 };
-  }
+  const data = await client.get(`/rooms/${id}`);
+  const r = normaliseRoom(data.room ?? data);
+  return { id, occupied: r.occupied, total: r.total };
 };

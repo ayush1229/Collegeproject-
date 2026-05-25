@@ -1,186 +1,336 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AllocationLayout from '../layouts/AllocationLayout';
+import { useAllocationState } from '../hooks/useAllocationState';
+import { getBatches } from '../api/allocation.api';
+import LoadingScreen from '../components/shared/LoadingScreen';
 
-/* ─── Mock batch queue ───────────────────────────────────────── */
-const BATCH_QUEUE = [
-  { id: 'Batch #09', status: 'done'    },
-  { id: 'Batch #10', status: 'done'    },
-  { id: 'Batch #11', status: 'done'    },
-  { id: 'Batch #12', status: 'next'    },
-  { id: 'Batch #13', eta: '00:45:00',  status: 'pending' },
-  { id: 'Batch #14', eta: '01:15:00',  status: 'pending' },
-  { id: 'Batch #15', eta: '01:45:00',  status: 'pending' },
-  { id: 'Batch #16', eta: '02:15:00',  status: 'pending' },
+/* ─── System phase definitions ───────────────────────────────── */
+const SYSTEM_PHASES = [
+  {
+    key:   'ADMIN_MODE',
+    label: 'Pre-Registration',
+    desc:  'Hostel admin configures allocation schedule.',
+  },
+  {
+    key:   'LOBBY',
+    label: 'Squad Formation',
+    desc:  'Form or join a squad of 1–4 members.',
+  },
+  {
+    key:   'SOFT_LOCK',
+    label: 'Squads Locked',
+    desc:  'No member changes. Batches are generated.',
+  },
+  {
+    key:   'LIVE_BATCHES',
+    label: 'Live Allocation',
+    desc:  'Each batch gets a timed selection window.',
+  },
+  {
+    key:   'FINAL_SWEEP',
+    label: 'Final Sweep',
+    desc:  'Remaining rooms filled. Results published.',
+  },
 ];
 
-/* ─── Live countdown hook ────────────────────────────────────── */
-function useCountdown(initialSeconds) {
-  const [secs, setSecs] = useState(initialSeconds);
+const PHASE_ORDER = SYSTEM_PHASES.map(p => p.key);
+
+/* ─── System phase stepper ───────────────────────────────────── */
+function SystemPhaseStepper({ currentPhase, batches, myBatchNumber }) {
+  const currentIdx = PHASE_ORDER.indexOf(currentPhase ?? 'ADMIN_MODE');
+
+  return (
+    <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+      <div className="px-5 py-3.5 border-b border-border">
+        <p className="text-[10.5px] font-bold tracking-[0.1em] text-crimson">ALLOCATION LIFECYCLE</p>
+      </div>
+      <div className="flex flex-col">
+        {SYSTEM_PHASES.map((phase, idx) => {
+          const isPast    = idx < currentIdx;
+          const isCurrent = idx === currentIdx;
+          const isFuture  = idx > currentIdx;
+
+          return (
+            <div
+              key={phase.key}
+              className={[
+                'flex items-start gap-3.5 px-5 py-4 border-b border-border last:border-0 relative',
+                isCurrent ? 'bg-canvas' : '',
+              ].join(' ')}
+            >
+              {/* Vertical connector line */}
+              {idx < SYSTEM_PHASES.length - 1 && (
+                <div className={`absolute left-[26px] top-[36px] w-px h-[calc(100%-20px)] ${isPast ? 'bg-crimson' : 'bg-border'}`} />
+              )}
+
+              {/* Dot */}
+              <div className="shrink-0 mt-0.5 z-10">
+                {isPast ? (
+                  <div className="w-3 h-3 rounded-full bg-crimson flex items-center justify-center">
+                    <svg width="7" height="7" viewBox="0 0 10 10" fill="none">
+                      <polyline points="1.5,5.5 4,8 8.5,2" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                ) : isCurrent ? (
+                  <div className="w-3.5 h-3.5 rounded-full bg-white border-2 border-crimson shadow-[0_0_0_3px_rgba(123,28,28,0.12)] animate-pulse" />
+                ) : (
+                  <div className="w-3 h-3 rounded-full bg-border-dark opacity-40" />
+                )}
+              </div>
+
+              {/* Text */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className={`text-[12.5px] font-bold ${isFuture ? 'text-text-muted' : 'text-text-primary'}`}>
+                    {phase.label}
+                  </p>
+                  {isCurrent && (
+                    <span className="text-[9px] font-bold tracking-[0.08em] px-1.5 py-0.5 bg-crimson text-white rounded">
+                      NOW
+                    </span>
+                  )}
+                  {isPast && (
+                    <span className="text-[9px] font-bold tracking-[0.08em] px-1.5 py-0.5 bg-canvas border border-border text-text-muted rounded">
+                      DONE
+                    </span>
+                  )}
+                </div>
+                <p className={`text-[11px] mt-0.5 ${isFuture ? 'text-text-muted opacity-60' : 'text-text-secondary'}`}>
+                  {phase.desc}
+                </p>
+
+                {/* Batch sub-list inside LIVE_BATCHES step */}
+                {phase.key === 'LIVE_BATCHES' && !isFuture && batches.length > 0 && (
+                  <div className="mt-2.5 flex flex-col gap-1">
+                    {batches.map(batch => {
+                      const isMine      = batch.batch_number === myBatchNumber;
+                      const isLive      = batch.status === 'ACTIVE';
+                      const isDone      = batch.status === 'COMPLETED' || batch.status === 'EVALUATING';
+                      const startTime   = batch.start_time
+                        ? new Date(batch.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                        : null;
+
+                      return (
+                        <div
+                          key={batch.batch_id ?? batch.id}
+                          className={[
+                            'flex items-center justify-between px-3 py-1.5 rounded border text-[11px]',
+                            isMine   ? 'border-crimson bg-canvas font-semibold' : 'border-border bg-transparent',
+                            isDone   ? 'opacity-45' : '',
+                          ].join(' ')}
+                        >
+                          <span className={isDone ? 'line-through text-text-muted' : 'text-text-primary'}>
+                            Batch #{batch.batch_number}{isMine ? ' · You' : ''}
+                          </span>
+                          {isLive && (
+                            <span className="flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 bg-crimson text-white rounded">
+                              <span className="w-1 h-1 rounded-full bg-white animate-pulse" />LIVE
+                            </span>
+                          )}
+                          {isDone && <span className="text-[9px] font-bold text-text-muted">DONE</span>}
+                          {!isLive && !isDone && startTime && (
+                            <span className="text-text-muted tabular-nums">{startTime}</span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Live countdown ─────────────────────────────────────────── */
+function useCountdown(targetDate) {
+  const [secs, setSecs] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setSecs(s => (s > 0 ? s - 1 : 0)), 1000);
+    if (!targetDate) return;
+    const calc = () => Math.max(0, Math.floor((new Date(targetDate).getTime() - Date.now()) / 1000));
+    setSecs(calc());
+    const t = setInterval(() => setSecs(calc()), 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [targetDate]);
+  if (!targetDate || secs === 0) return '—';
   const hh = String(Math.floor(secs / 3600)).padStart(2, '0');
   const mm = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
   const ss = String(secs % 60).padStart(2, '0');
   return `${hh}:${mm}:${ss}`;
 }
 
-/* ─── Phase progress bar ─────────────────────────────────────── */
-const PHASES = ['PREP', 'WAITING', 'LIVE'];
-
-function PhaseBar({ current = 'WAITING' }) {
-  const idx = PHASES.indexOf(current);
-  return (
-    <div className="flex items-center justify-center gap-0 pt-2 pb-1">
-      {PHASES.map((phase, i) => (
-        <div key={phase} className="flex flex-col items-center">
-          <div className="flex items-center">
-            {i > 0 && (
-              <div className={`w-20 h-0.5 ${i <= idx ? 'bg-crimson' : 'bg-border'}`} />
-            )}
-            <div className={[
-              'rounded-full transition-all',
-              i < idx  ? 'w-3 h-3 bg-crimson' :
-              i === idx ? 'w-3.5 h-3.5 bg-white border-2 border-crimson shadow-[0_0_0_3px_rgba(123,28,28,0.15)]' :
-                          'w-3 h-3 bg-border-dark',
-            ].join(' ')} />
-          </div>
-          <span className={`text-[9.5px] font-semibold tracking-[0.08em] mt-1.5 ${i === idx ? 'text-crimson font-bold' : 'text-text-muted'}`}>
-            {phase}
-          </span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ─── List icon ──────────────────────────────────────────────── */
-const ListIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-    <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-    <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-  </svg>
-);
+/* ─── Icons ──────────────────────────────────────────────────── */
 const ArrowRight = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
     <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
   </svg>
 );
-const InfoCircle = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-    <circle cx="12" cy="12" r="10"/>
-    <line x1="12" y1="8" x2="12" y2="12"/>
-    <circle cx="12" cy="16.5" r="0.5" fill="currentColor"/>
-  </svg>
-);
 
 /* ─── Page ───────────────────────────────────────────────────── */
 export default function WaitingRoomPage() {
-  const countdown = useCountdown(23 * 60 + 41);
+  const navigate = useNavigate();
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const studentId = user ? user.id : null;
+
+  const { state, loading } = useAllocationState(studentId);
+  const [batches, setBatches] = useState([]);
+
+  useEffect(() => {
+    if (state?.hostelId) {
+      getBatches(state.hostelId).then(res => {
+        if (res.batches) setBatches(res.batches);
+        else if (res.result) setBatches(res.result);
+      }).catch(console.error);
+    }
+  }, [state]);
+
+  const countdown = useCountdown(state?.batchStartTime ?? null);
+
+  if (loading || !state) return <LoadingScreen label="Checking Waiting Room..." />;
+
+  const myBatchId = state.batchId || state.batchNumber;
+
+  // Status chip data — always use batchNumber (integer), never batchId (UUID)
+  const statusChips = [
+    ['SYSTEM PHASE', state.phase?.replace(/_/g, ' ') ?? '—'],
+    ['YOUR BATCH',   state.batchNumber ? `#${state.batchNumber}` : 'TBD'],
+    ['SQUAD STATUS', state.groupStatus ?? '—'],
+  ];
 
   return (
-    <AllocationLayout phase="Selection Phase" batch="Batch 2024-A">
+    <AllocationLayout phase="Timeline" batch={state.batchNumber ? `Batch ${state.batchNumber}` : 'Batch TBD'} hostelId={state.hostelId}>
       <div className="flex flex-col gap-5">
 
-        {/* Info banner */}
-        <div className="flex items-start gap-3 bg-card border border-border rounded shadow-sm px-4 py-3.5">
-          <span className="text-text-secondary mt-0.5 shrink-0"><InfoCircle /></span>
-          <div>
-            <p className="text-[13px] font-bold text-text-primary mb-0.5">Phase 2: Top-Up Enabled</p>
-            <p className="text-[12px] text-text-secondary leading-relaxed">
-              Additional inventory has been released for the upcoming batches. Review the updated grid before your selection window opens.
+        {/* Countdown card — only during SOFT_LOCK / LIVE_BATCHES */}
+        {(state.phase === 'SOFT_LOCK' || state.phase === 'LIVE_BATCHES') && (
+          <div className="bg-card border border-border rounded shadow-sm px-8 py-7 flex flex-col items-center text-center">
+            <p className="text-[11px] font-bold tracking-[0.1em] text-text-muted mb-2">
+              {state.batchActive
+                ? 'YOUR BATCH IS ACTIVE — SUBMIT PREFERENCES'
+                : state.batchNumber
+                ? `TIME UNTIL BATCH #${state.batchNumber} BEGINS`
+                : 'WAITING FOR BATCH SCHEDULE'}
             </p>
+            <p className="text-[52px] font-black tracking-[-0.02em] text-crimson leading-none tabular-nums mb-1">
+              {state.batchActive ? 'LIVE' : countdown}
+            </p>
+            {state.batchActive && (
+              <button
+                onClick={() => navigate('/allocation/squad')}
+                className="mt-4 flex items-center gap-2 px-6 py-2.5 bg-crimson text-white text-[11px] font-bold tracking-[0.1em] rounded border-0 cursor-pointer hover:opacity-90 transition-opacity"
+              >
+                GO TO PREFERENCES <ArrowRight />
+              </button>
+            )}
           </div>
+        )}
+
+        {/* Status chips */}
+        <div className="grid grid-cols-3 gap-3">
+          {statusChips.map(([label, value]) => (
+            <div key={label} className="bg-card border border-border rounded shadow-sm px-4 py-4 flex flex-col gap-1">
+              <span className="text-[9.5px] font-bold tracking-[0.1em] text-text-muted">{label}</span>
+              <span className="text-base font-extrabold text-text-primary tracking-tight">{value}</span>
+            </div>
+          ))}
         </div>
 
-        {/* 2-column layout */}
+        {/* 2-column layout: stepper (left) + global queue (right) */}
         <div className="grid grid-cols-[1fr_268px] gap-5 items-start">
 
-          {/* LEFT ─────────────────────────────────────────────── */}
-          <div className="flex flex-col gap-4">
+          {/* LEFT — system phase stepper */}
+          <SystemPhaseStepper
+            currentPhase={state.phase}
+            batches={batches}
+            myBatchNumber={state.batchNumber}
+          />
 
-            {/* Rollover banner */}
-            <div className="flex items-center justify-between bg-crimson rounded px-5 py-3.5 gap-4">
-              <div className="flex items-center gap-2.5">
-                <span className="text-white font-black text-base opacity-90">!</span>
-                <span className="text-white text-[13px] font-extrabold tracking-[0.08em]">ROLLOVER ACTIVE</span>
-              </div>
-              <div className="px-3.5 py-1.5 border-[1.5px] border-white/50 rounded text-white text-[12px] font-semibold tracking-[0.02em] whitespace-nowrap">
-                You enter Batch #12 as RANK #1
-              </div>
-            </div>
-
-            {/* Countdown card */}
-            <div className="bg-card border border-border rounded shadow-sm px-8 py-8 flex flex-col items-center text-center">
-              <p className="text-[11px] font-bold tracking-[0.1em] text-text-muted mb-3">TIME UNTIL BATCH #12 BEGINS</p>
-              <p className="text-[56px] font-black tracking-[-0.02em] text-crimson leading-none tabular-nums mb-7">
-                {countdown}
-              </p>
-              <PhaseBar current="WAITING" />
-            </div>
-
-            {/* Status chips */}
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                ['CURRENT STATUS', 'Rank in Batch #1'],
-                ['SQUAD SIZE',     '03 Members'],
-                ['ELIGIBLE POOL',  '4-Seat + 3-Seat'],
-              ].map(([label, value]) => (
-                <div key={label} className="bg-card border border-border rounded shadow-sm px-4 py-4 flex flex-col gap-1">
-                  <span className="text-[9.5px] font-bold tracking-[0.1em] text-text-muted">{label}</span>
-                  <span className="text-base font-extrabold text-text-primary tracking-tight">{value}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* CTA */}
-            <button className="flex items-center gap-2.5 px-7 py-3.5 bg-crimson text-white text-[12px] font-bold tracking-[0.1em] rounded hover:bg-crimson-dark transition-colors duration-150 border-0 cursor-pointer self-start">
-              SCOUT AVAILABLE ROOMS <ArrowRight />
-            </button>
-          </div>
-
-          {/* RIGHT – Batch queue ─────────────────────────────── */}
+          {/* RIGHT — Global Queue */}
           <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
-            <div className="flex items-center gap-2 px-4 py-3.5 border-b border-border">
-              <span className="text-text-secondary"><ListIcon /></span>
-              <span className="text-[11px] font-bold tracking-[0.06em] text-text-primary">Global Queue</span>
+            <div className="px-4 py-3.5 border-b border-border">
+              <p className="text-[10.5px] font-bold tracking-[0.1em] text-crimson">GLOBAL QUEUE</p>
+              <p className="text-[11px] text-text-muted mt-0.5">All batches for this allocation cycle</p>
             </div>
 
-            <div className="flex flex-col">
-              {BATCH_QUEUE.map((batch) => (
-                <div
-                  key={batch.id}
-                  className={[
-                    'flex items-center justify-between px-4 py-3 border-b border-border last:border-0',
-                    batch.status === 'done'    ? 'opacity-45'    : '',
-                    batch.status === 'next'    ? 'bg-canvas border border-border-dark rounded mx-2 my-1 px-3' : '',
-                  ].join(' ')}
-                >
-                  <span className={`text-[13px] font-semibold ${batch.status === 'done' ? 'line-through text-text-muted' : 'text-text-primary'}`}>
-                    {batch.id}
-                  </span>
-
-                  {batch.status === 'done' && (
-                    <span className="text-[10px] font-bold tracking-[0.06em] px-2 py-0.5 bg-canvas border border-border rounded text-text-muted">
-                      DONE
-                    </span>
-                  )}
-                  {batch.status === 'next' && (
-                    <span className="flex items-center gap-1 text-[10px] font-bold tracking-[0.06em] px-2 py-0.5 bg-crimson text-white rounded">
-                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                      NEXT
-                    </span>
-                  )}
-                  {batch.status === 'pending' && (
-                    <span className="text-[11.5px] font-semibold text-text-muted tabular-nums">
-                      {batch.eta}
-                    </span>
-                  )}
+            <div className="flex flex-col max-h-[520px] overflow-y-auto">
+              {batches.length === 0 ? (
+                <div className="flex flex-col items-center py-10 gap-2 text-center px-4">
+                  <svg className="text-text-muted opacity-40" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+                  </svg>
+                  <p className="text-[12px] text-text-muted">Batches are generated when Soft Lock begins.</p>
                 </div>
-              ))}
+              ) : (
+                batches.map((batch) => {
+                  const isMine  = batch.batch_number === state.batchNumber;
+                  const isLive  = batch.status === 'ACTIVE';
+                  // EVALUATING treated same as COMPLETED — no separate display needed
+                  const isDone  = batch.status === 'COMPLETED' || batch.status === 'EVALUATING';
+                  const isPending = batch.status === 'PENDING';
+
+                  const startTime = batch.start_time
+                    ? new Date(batch.start_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    : null;
+                  const startDate = batch.start_time
+                    ? new Date(batch.start_time).toLocaleDateString([], { month: 'short', day: 'numeric' })
+                    : null;
+
+                  return (
+                    <div
+                      key={batch.id ?? batch.batch_id}
+                      className={[
+                        'flex items-center justify-between px-4 py-3 border-b border-border last:border-0 transition-colors',
+                        isDone  ? 'opacity-45' : '',
+                        isMine  ? 'bg-canvas' : '',
+                      ].join(' ')}
+                    >
+                      {/* Left: batch number + "You" label */}
+                      <div className="flex flex-col gap-0.5">
+                        <span className={`text-[13px] font-bold ${isDone ? 'line-through text-text-muted' : 'text-text-primary'}`}>
+                          Batch #{batch.batch_number}
+                          {isMine && (
+                            <span className="ml-1.5 text-[9px] font-bold tracking-[0.06em] px-1.5 py-0.5 bg-crimson text-white rounded">
+                              YOU
+                            </span>
+                          )}
+                        </span>
+                        {/* Start time sub-label */}
+                        {startTime && (
+                          <span className="text-[10.5px] text-text-muted tabular-nums">
+                            {startDate} · {startTime}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Right: status badge */}
+                      {isLive && (
+                        <span className="flex items-center gap-1 text-[9px] font-bold tracking-[0.06em] px-2 py-0.5 bg-crimson text-white rounded shrink-0">
+                          <span className="w-1 h-1 rounded-full bg-white animate-pulse shrink-0" />
+                          LIVE
+                        </span>
+                      )}
+                      {isDone && (
+                        <span className="text-[9px] font-bold tracking-[0.06em] px-2 py-0.5 bg-canvas border border-border text-text-muted rounded shrink-0">
+                          DONE
+                        </span>
+                      )}
+                      {isPending && (
+                        <span className="text-[9px] font-bold tracking-[0.06em] px-2 py-0.5 bg-canvas border border-border text-text-muted rounded shrink-0">
+                          PENDING
+                        </span>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
+
         </div>
       </div>
     </AllocationLayout>

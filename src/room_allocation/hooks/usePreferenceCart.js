@@ -1,9 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
-const MAX_PREFERENCES = 5;
+const MAX_PREFERENCES = 10;
 
-export function usePreferenceCart() {
-  const [cart, setCart] = useState([]);
+export function usePreferenceCart(studentId) {
+  const [cart, setCart] = useState(() => {
+    if (!studentId) return [];
+    try {
+      const saved = localStorage.getItem(`draft_prefs_${studentId}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    if (studentId) {
+      localStorage.setItem(`draft_prefs_${studentId}`, JSON.stringify(cart));
+    }
+  }, [cart, studentId]);
 
   const add = (roomId) => {
     setCart(prev => {

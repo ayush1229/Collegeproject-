@@ -35,7 +35,7 @@ export default function RoomCard({ room, inCart, onToggle, isLeader = true }) {
       )}
 
       {/* Room number */}
-      <p className="text-[20px] font-black tracking-tight text-text-primary leading-none">{room.roomNumber ?? room.id}</p>
+      <p className="text-[20px] font-black tracking-tight text-text-primary leading-none">{room.roomNo}</p>
 
       {/* Type + Floor */}
       <div className="flex gap-1.5 flex-wrap">
