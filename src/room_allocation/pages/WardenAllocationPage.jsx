@@ -122,7 +122,7 @@ function LayoutBuilder({ selectedHostel, analytics, rooms, notifications, setNot
           targetRoomIds: emptyRooms.map(r => r.id),
           layoutConfig: {
             capacity,
-            branchDiversity: layout.diversity,
+            branchDiversity: layout.diversity || 'ALLOW_SAME',
             nodes
           }
         };
@@ -135,6 +135,8 @@ function LayoutBuilder({ selectedHostel, analytics, rooms, notifications, setNot
         if (allocateRes.success) {
           totalStudentsAllocated += allocateRes.result?.studentsAllocated || 0;
           totalRoomsAllocated += allocateRes.result?.roomsAllocated || 0;
+        } else {
+          throw new Error(allocateRes.message || 'Validation or matching failed.');
         }
       }
 
