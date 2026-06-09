@@ -5,7 +5,7 @@ import RoomGrid from './RoomGrid';
 import PreferenceCart from './PreferenceCart';
 import SubmissionPanel from './SubmissionPanel';
 import PhaseBanner from '../shared/PhaseBanner';
-import { useLiveRooms } from '../../hooks/useLiveRooms';
+import { useRooms } from '../../hooks/useRooms';
 import { usePreferenceCart } from '../../hooks/usePreferenceCart';
 import { submitPreferences } from '../../api/allocation.api';
 import { ROUTES } from '../../constants/routes';
@@ -31,7 +31,7 @@ export default function PreferenceBuilder({
   const hostelId = allocationState?.hostelId ?? null;
   const isLeader = allocationState?.isLeader ?? false;
 
-  const { rooms, loading } = useLiveRooms(hostelId);
+  const { data: rooms = [], isLoading: loading } = useRooms(hostelId, studentId);
   const { cart, add, remove, moveUp, moveDown, isInCart, isFull, MAX_PREFERENCES, clear } = usePreferenceCart(studentId);
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
 
