@@ -1,5 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useAllocationState } from '../../hooks/useAllocationState';
+import { useActiveBatch } from '../../hooks/useActiveBatch';
 import { triggerDevPhase, triggerResetPhase } from '../../api/allocation.api';
 
 /* Pages that exist — others render as non-interactive text */
@@ -27,11 +27,11 @@ function getLiveStatusStyle(phase) {
   }
 }
 
-export default function TopNav() {
+export default function TopNav({ liveStatus = false }) {
   const navigate = useNavigate();
   const userStr = localStorage.getItem('user');
   const user = userStr ? JSON.parse(userStr) : null;
-  const { state } = useAllocationState(user ? user.id : null);
+  const { data: state } = useActiveBatch(user ? user.id : null);
 
   const handleAdvancePhase = () => {
     if (!state || !state.hostelId) return alert('No active allocation state');

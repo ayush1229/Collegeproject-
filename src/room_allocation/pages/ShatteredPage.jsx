@@ -1,12 +1,12 @@
 import { useNavigate } from 'react-router-dom';
 import AllocationLayout from '../layouts/AllocationLayout';
-import { useAllocationState } from '../hooks/useAllocationState';
+import { useActiveBatch } from '../hooks/useActiveBatch';
 
 export default function ShatteredPage() {
   const navigate = useNavigate();
   const userStr  = localStorage.getItem('user');
   const user     = userStr ? JSON.parse(userStr) : null;
-  const { state } = useAllocationState(user?.id ?? null);
+  const { data: state } = useActiveBatch(user?.id ?? null);
 
   return (
     <AllocationLayout phase="Squad Shattered" batch="Re-enter as Solo">

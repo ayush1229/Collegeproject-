@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import TopNav from '../components/shared/TopNav';
 import { allocationSocket } from '../sockets/allocation.socket.js';
-import { useAllocationState } from '../hooks/useAllocationState';
+import { useActiveBatch } from '../hooks/useActiveBatch';
 import { useAllocationSockets } from '../hooks/useAllocationSockets';
 import PreferenceBuilder from '../components/live_selection/PreferenceBuilder';
 
@@ -67,7 +67,7 @@ export default function AllocationLayout({
 
   const userStr = localStorage.getItem('user');
   const studentId = userStr ? JSON.parse(userStr).id : null;
-  const { state: allocState } = useAllocationState(studentId);
+  const { data: allocState } = useActiveBatch(studentId);
   const [showPopup, setShowPopup] = useState(true);
 
   // ── Centralized Pusher → TanStack Query bridge ────────────────

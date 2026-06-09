@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import AllocationLayout from '../layouts/AllocationLayout';
-import { useAllocationState } from '../hooks/useAllocationState';
+import { useActiveBatch } from '../hooks/useActiveBatch';
 import { useLiveRooms } from '../hooks/useLiveRooms';
 import RoomFilters from '../components/live_selection/RoomFilters';
 
@@ -9,7 +9,7 @@ export default function RoomGridPage() {
   const user = userStr ? JSON.parse(userStr) : null;
   const studentId = user ? user.id : null;
 
-  const { state: allocState, loading: stateLoading } = useAllocationState(studentId);
+  const { data: allocState, isLoading: stateLoading } = useActiveBatch(studentId);
   const { rooms, loading } = useLiveRooms(allocState?.hostelId ?? null);
 
   const [filters, setFilters] = useState({

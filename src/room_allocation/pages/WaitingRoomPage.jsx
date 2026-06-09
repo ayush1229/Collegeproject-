@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import AllocationLayout from '../layouts/AllocationLayout';
-import { useAllocationState } from '../hooks/useAllocationState';
+import { useActiveBatch } from '../hooks/useActiveBatch';
 import { getBatches } from '../api/allocation.api';
 import LoadingScreen from '../components/shared/LoadingScreen';
 
@@ -177,17 +178,18 @@ export default function WaitingRoomPage() {
   const user = userStr ? JSON.parse(userStr) : null;
   const studentId = user ? user.id : null;
 
-  const { state, loading } = useAllocationState(studentId);
-  const [batches, setBatches] = useState([]);
+  const { data: state, isLoading: loading } = useActiveBatch(studentId);
 
-  useEffect(() => {
-    if (state?.hostelId) {
-      getBatches(state.hostelId).then(res => {
-        if (res.batches) setBatches(res.batches);
-        else if (res.result) setBatches(res.result);
-      }).catch(console.error);
-    }
-  }, [state]);
+  // Use TanStack Query for batches instead of useEffect
+  const { data: batchesData } = useQuery({
+    queryKey: ['batches', state?.hostelId],
+    queryFn: () => getBatches(state.hostelId),
+    enabled: !!state?.hostelId,
+    staleTime: 30_000,
+    select: (res) => res.batches || res.result || [],
+  });
+  
+  const batches = batchesData || [];
 
   const countdown = useCountdown(state?.batchStartTime ?? null);
 
