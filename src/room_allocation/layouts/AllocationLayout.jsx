@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
 import TopNav from '../components/shared/TopNav';
 import { allocationSocket } from '../sockets/allocation.socket.js';
 import { useAllocationState } from '../hooks/useAllocationState';
+import { useAllocationSockets } from '../hooks/useAllocationSockets';
 import PreferenceBuilder from '../components/live_selection/PreferenceBuilder';
+import { queryClient } from '../lib/queryClient.js';
 
 /* ── Icons ────────────────────────────────────────────────────── */
 const GridIcon   = () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/></svg>;
@@ -69,10 +72,19 @@ export default function AllocationLayout({
   const { state: allocState } = useAllocationState(studentId);
   const [showPopup, setShowPopup] = useState(true);
 
+  // ── Centralized Pusher → TanStack Query bridge ────────────────
+  // Mount once here so ALL child pages share one set of listeners.
+  useAllocationSockets({
+    studentId,
+    hostelId: hostelId ?? allocState?.hostelId ?? null,
+    groupId:  allocState?.groupId ?? null,
+  });
+
   const isLiveTurn = allocState?.batchActive && !allocState?.submitted && !allocState?.isAllocated;
   const displayPopup = isLiveTurn && showPopup;
 
   return (
+    <QueryClientProvider client={queryClient}>
     <div className="flex flex-col min-h-screen bg-canvas">
       <TopNav liveStatus />
 
@@ -153,5 +165,6 @@ export default function AllocationLayout({
         </main>
       </div>
     </div>
+    </QueryClientProvider>
   );
 }
