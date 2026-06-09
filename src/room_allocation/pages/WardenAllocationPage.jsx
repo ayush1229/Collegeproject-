@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { allocationSocket, WS_EVENTS } from '../sockets/allocation.socket.js';
 import { apiFetch } from '../../utils/api';
+import StudentImportModal from '../components/admin/StudentImportModal';
 
 /* ── Icons ────────────────────────────────────────────────── */
 const GridIcon = () => <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5"/></svg>;
@@ -596,6 +597,7 @@ function RemainingStudents({ students, selectedHostel, notifications, setNotific
 export default function WardenAllocationPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [notifications, setNotifications] = useState([]);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   
   // Real Data State
   const [hostels, setHostels] = useState([]);
@@ -781,7 +783,15 @@ export default function WardenAllocationPage() {
             {/* Overview Tab */}
             {activeTab === 'overview' && (
               <div className="flex flex-col gap-5">
-                <h1 className="text-[24px] font-black text-text-primary">Allocation Dashboard</h1>
+                <div className="flex justify-between items-center">
+                  <h1 className="text-[24px] font-black text-text-primary">Allocation Dashboard</h1>
+                  <button 
+                    onClick={() => setIsImportModalOpen(true)}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-bold shadow-sm transition-colors"
+                  >
+                    Import CSV
+                  </button>
+                </div>
 
                 <div className="grid grid-cols-4 gap-4">
                   <div className="bg-card border border-border rounded shadow-sm px-5 py-5">
@@ -864,6 +874,11 @@ export default function WardenAllocationPage() {
           </div>
         </main>
       </div>
+
+      <StudentImportModal 
+        isOpen={isImportModalOpen} 
+        onClose={() => setIsImportModalOpen(false)} 
+      />
     </div>
   );
 }
