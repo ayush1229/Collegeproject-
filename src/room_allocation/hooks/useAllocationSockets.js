@@ -67,6 +67,7 @@ export function useAllocationSockets({ studentId, hostelId, groupId } = {}) {
             if (studentId) {
                 queryClient.invalidateQueries({ queryKey: batchKeys.current(studentId) });
                 queryClient.invalidateQueries({ queryKey: phaseKeys.current(studentId) });
+                queryClient.invalidateQueries({ queryKey: batchKeys.result(studentId) });
             }
             if (groupId) {
                 queryClient.invalidateQueries({ queryKey: groupKeys.detail(groupId) });
@@ -78,6 +79,7 @@ export function useAllocationSockets({ studentId, hostelId, groupId } = {}) {
         const onRoundCycleDone = () => {
             if (studentId) {
                 queryClient.invalidateQueries({ queryKey: batchKeys.current(studentId) });
+                queryClient.invalidateQueries({ queryKey: batchKeys.result(studentId) });
             }
             if (hostelId) {
                 queryClient.invalidateQueries({ queryKey: roomKeys.list(hostelId) });

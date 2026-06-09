@@ -46,4 +46,6 @@ export const phaseKeys = {
 export const batchKeys = {
     /** Full allocation state for a student: batchKeys.current(studentId) */
     current: (studentId) => ['active-batch', studentId],
+    /** Final allocation result: batchKeys.result(studentId) */
+    result:  (studentId) => ['final-allocation', studentId],
 };
