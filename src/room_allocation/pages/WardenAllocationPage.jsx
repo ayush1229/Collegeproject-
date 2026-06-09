@@ -32,7 +32,12 @@ export default function WardenAllocationPage() {
         const loadedHostels = data.hostels || [];
         setHostels(loadedHostels);
         if (loadedHostels.length > 0) {
-          setSelectedHostel(loadedHostels[0].id);
+          const savedHostel = localStorage.getItem('activeWardenHostel');
+          if (savedHostel && loadedHostels.find(h => h.id === savedHostel)) {
+            setSelectedHostel(savedHostel);
+          } else {
+            setSelectedHostel(loadedHostels[0].id);
+          }
         }
       } catch (err) {
         console.error("Failed to fetch hostels:", err);
@@ -70,6 +75,7 @@ export default function WardenAllocationPage() {
   // Fetch Data & Join Socket when Hostel changes
   useEffect(() => {
     if (selectedHostel) {
+      localStorage.setItem('activeWardenHostel', selectedHostel);
       allocationSocket.joinHostel(selectedHostel);
       fetchHostelData(selectedHostel);
 
