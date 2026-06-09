@@ -28,10 +28,18 @@ function getAuthHeaders() {
 }
 
 async function request(method, path, body) {
+    const headers = getAuthHeaders();
+    const isFormData = body instanceof FormData;
+
+    // fetch automatically sets correct multipart/form-data boundary when we omit Content-Type
+    if (isFormData) {
+        delete headers['Content-Type'];
+    }
+
     const res = await fetch(`${BASE_URL}${path}`, {
         method,
-        headers: getAuthHeaders(),
-        ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+        headers,
+        ...(body !== undefined ? { body: isFormData ? body : JSON.stringify(body) } : {}),
     });
 
     const data = await res.json();
