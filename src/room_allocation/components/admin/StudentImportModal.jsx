@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import client from '../../../room_allocation/api/client.js';
 
-export default function StudentImportModal({ isOpen, onClose }) {
-  const [step, setStep] = useState('UPLOAD'); // UPLOAD, MAPPING, REPORT
+export default function StudentImportModal({ isOpen, onClose, hostels = [], activeHostelId = '' }) {
+  const [step, setStep] = useState('SELECT_HOSTEL'); // SELECT_HOSTEL, UPLOAD, MAPPING, REPORT
   const [file, setFile] = useState(null);
+  const [selectedHostelId, setSelectedHostelId] = useState(activeHostelId || (hostels[0]?.id || ''));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -12,7 +13,7 @@ export default function StudentImportModal({ isOpen, onClose }) {
   const [csvHeaders, setCsvHeaders] = useState([]);
   const [mappings, setMappings] = useState({});
   const [dbFields] = useState([
-    'name', 'father_name', 'email', 'hostel', 'hostel_id', 'roll_no',
+    'name', 'father_name', 'email', 'roll_no',
     'phone', 'parent_number', 'category', 'blood_group', 'state',
     'address', 'pincode', 'department', 'cgpa', 'joining_year', 'individual_rank'
   ]);
@@ -23,7 +24,7 @@ export default function StudentImportModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   const resetState = () => {
-    setStep('UPLOAD');
+    setStep('SELECT_HOSTEL');
     setFile(null);
     setLoading(false);
     setError(null);
@@ -51,9 +52,7 @@ export default function StudentImportModal({ isOpen, onClose }) {
 
     try {
       // NOTE: Using the raw client to skip default JSON headers for FormData
-      const res = await client.post('/import/students/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      const res = await client.post('/import/students/upload', formData);
       
       const data = res.result ?? res;
       setFileId(data.fileId);
@@ -87,7 +86,8 @@ export default function StudentImportModal({ isOpen, onClose }) {
     try {
       const res = await client.post('/import/students/confirm', {
         fileId,
-        mappings: finalMappings
+        mappings: finalMappings,
+        hostelId: selectedHostelId
       });
       
       setReport(res.result ?? res);
@@ -103,7 +103,7 @@ export default function StudentImportModal({ isOpen, onClose }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
       <div className="bg-canvas border border-border shadow-xl rounded-xl w-full max-w-4xl flex flex-col my-auto relative">
         <div className="bg-card px-6 py-4 border-b border-border flex justify-between items-center rounded-t-xl">
-          <h2 className="text-lg font-black text-text-primary tracking-tight">Import Students via CSV</h2>
+          <h2 className="text-lg font-black text-text-primary tracking-tight">Import Students via Spreadsheet</h2>
           <button onClick={handleClose} className="text-text-muted hover:text-crimson font-bold text-xl leading-none">&times;</button>
         </div>
 
@@ -114,15 +114,36 @@ export default function StudentImportModal({ isOpen, onClose }) {
             </div>
           )}
 
+          {step === 'SELECT_HOSTEL' && (
+            <div className="flex flex-col gap-4">
+              <p className="text-sm text-text-secondary">
+                Select the target hostel where the imported students will be assigned.
+              </p>
+              <div className="border border-border rounded-xl p-8 flex flex-col items-center justify-center bg-card">
+                <label className="text-sm font-bold text-text-primary mb-2">Target Hostel</label>
+                <select 
+                  value={selectedHostelId} 
+                  onChange={(e) => setSelectedHostelId(e.target.value)}
+                  className="w-full max-w-sm bg-canvas border border-border text-text-primary text-sm rounded px-3 py-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                >
+                  <option value="" disabled>-- Select a Hostel --</option>
+                  {hostels.map(h => (
+                    <option key={h.id} value={h.id}>{h.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
           {step === 'UPLOAD' && (
             <div className="flex flex-col gap-4">
               <p className="text-sm text-text-secondary">
-                Upload a CSV file containing student data. You will be able to map the columns in the next step before any data is inserted.
+                Upload a CSV, XLS, or XLSX file containing student data. You will be able to map the columns in the next step before any data is inserted.
               </p>
               <div className="border-2 border-dashed border-border rounded-xl p-10 flex flex-col items-center justify-center bg-card">
                 <input 
                   type="file" 
-                  accept=".csv"
+                  accept=".csv, .xls, .xlsx, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, text/csv"
                   onChange={e => setFile(e.target.files[0])}
                   className="block w-full max-w-sm text-sm text-text-secondary
                     file:mr-4 file:py-2 file:px-4
@@ -138,6 +159,7 @@ export default function StudentImportModal({ isOpen, onClose }) {
           {step === 'MAPPING' && (
             <div className="flex flex-col gap-4">
               <div className="bg-indigo-50 border border-indigo-100 text-indigo-800 px-4 py-3 rounded text-sm">
+                <strong>Target Hostel:</strong> {hostels.find(h => h.id === selectedHostelId)?.name || 'Unknown'}<br/>
                 <strong>Review Column Mapping:</strong> We've auto-detected some columns. Please map any missing columns required for your import.
               </div>
               <div className="border border-border rounded-lg overflow-hidden bg-card">
@@ -150,7 +172,7 @@ export default function StudentImportModal({ isOpen, onClose }) {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {dbFields.map(dbField => {
-                      const isRequired = ['name', 'email', 'hostel_id', 'department'].includes(dbField);
+                      const isRequired = ['name', 'email', 'department'].includes(dbField);
                       return (
                         <tr key={dbField} className="hover:bg-canvas transition-colors">
                           <td className="px-4 py-3 font-medium text-text-primary">
@@ -234,6 +256,16 @@ export default function StudentImportModal({ isOpen, onClose }) {
             </button>
           )}
 
+          {step === 'SELECT_HOSTEL' && (
+            <button 
+              onClick={() => setStep('UPLOAD')}
+              disabled={!selectedHostelId}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded text-sm font-bold shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[120px]"
+            >
+              Next: Upload File
+            </button>
+          )}
+
           {step === 'UPLOAD' && (
             <button 
               onClick={handleUpload}
@@ -250,7 +282,7 @@ export default function StudentImportModal({ isOpen, onClose }) {
               disabled={loading}
               className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded text-sm font-bold shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[140px]"
             >
-              {loading ? 'Importing...' : 'Confirm & Import'}
+              {loading ? 'Importing...' : `Confirm Import to ${hostels.find(h => h.id === selectedHostelId)?.name}`}
             </button>
           )}
 

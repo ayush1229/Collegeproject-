@@ -10,6 +10,10 @@ import "./index.css";
 
 import { AllocationRoutes } from "./room_allocation";
 import WardenAllocationPage from "./room_allocation/pages/WardenAllocationPage";
+import WardenOverviewTab from "./room_allocation/pages/WardenOverviewTab";
+import WardenLayoutTab from "./room_allocation/pages/WardenLayoutTab";
+import WardenRoomGridTab from "./room_allocation/pages/WardenRoomGridTab";
+import WardenRemainingTab from "./room_allocation/pages/WardenRemainingTab";
 
 /* ================= AUTH ================= */
 import Login from "./auth/login";
@@ -143,6 +147,13 @@ const router = createBrowserRouter([
     path: "/warden",
     element: <WardenAllocationPage />,
     errorElement: <ErrorPage />,
+    children: [
+      { index: true, element: <Navigate to="overview" replace /> },
+      { path: "overview", element: <WardenOverviewTab /> },
+      { path: "layout-builder", element: <WardenLayoutTab /> },
+      { path: "room-grid", element: <WardenRoomGridTab /> },
+      { path: "remaining", element: <WardenRemainingTab /> },
+    ]
   },
   {
     path: "*",
