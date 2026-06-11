@@ -16,10 +16,12 @@ export default function RoomGridPage() {
     type: 'All Types',
     block: 'All Blocks',
     status: 'All Rooms',
+    search: '',
   });
 
   const filteredRooms = useMemo(() => {
     return rooms.filter((room) => {
+      if (filters.search && !room.roomNo.toLowerCase().includes(filters.search.toLowerCase())) return false;
       if (filters.type !== 'All Types' && room.type !== filters.type) return false;
       if (filters.block !== 'All Blocks' && room.block !== filters.block) return false;
       if (filters.status === 'Available Only' && room.occupied >= room.total) return false;

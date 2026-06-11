@@ -7,6 +7,7 @@ export default function WardenRoomGridTab() {
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [assignStudentId, setAssignStudentId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [searchRoom, setSearchRoom] = useState('');
 
   const handleManualAssign = async () => {
     if (!assignStudentId || !selectedRoom) return;
@@ -78,10 +79,26 @@ export default function WardenRoomGridTab() {
 
   return (
     <div>
-      <h1 className="text-[24px] font-black text-text-primary mb-5">Room Grid & Manual Assignment</h1>
+      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-5">
+        <h1 className="text-[24px] font-black text-text-primary m-0">Room Grid & Manual Assignment</h1>
+        <div className="relative w-full md:w-[250px]">
+          <input 
+            type="text" 
+            placeholder="Search Room Number..." 
+            value={searchRoom}
+            onChange={(e) => setSearchRoom(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 bg-card border border-border rounded text-[12px] focus:outline-none focus:border-crimson transition-colors"
+          />
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+      </div>
+
       <div className="flex flex-col gap-5">
-        <div className="grid grid-cols-4 gap-4">
-          {rooms.map(room => (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {rooms.filter(r => !searchRoom || r.roomNumber.toLowerCase().includes(searchRoom.toLowerCase())).map(room => (
             <button
               key={room.id}
               onClick={() => setSelectedRoom(room)}

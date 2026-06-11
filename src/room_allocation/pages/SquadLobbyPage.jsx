@@ -527,7 +527,6 @@ export default function SquadLobbyPage() {
 
           {/* CENTER */}
           <div className="flex flex-col gap-5 min-h-0 h-full">
-            <InviteInbox pendingRequests={pendingRequests} onAccept={handleAccept} onReject={handleReject} />
             <CenterBottomPanel state={state} publicSquads={publicSquads} pendingRequests={pendingRequests} onApplyToSquad={handleApplyToSquad} />
           </div>
 

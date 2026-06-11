@@ -31,6 +31,13 @@ const NAV_ITEMS = [
   { label: 'Support',   Icon: HelpIcon,  to: null                      },
 ];
 
+const TOP_NAV_LINKS = [
+  { label: 'Allocation Gateway', to: '/allocation', icon: GridIcon },
+  { label: 'Squads',             to: '/allocation/squad', icon: SquadIcon },
+  { label: 'Preferences',        to: '/allocation/preferences', icon: RoomIcon },
+  { label: 'Results',            to: '/allocation/results', icon: ClockIcon },
+];
+
 /* Shared class builders */
 const navBase   = 'flex items-center gap-2.5 px-2.5 py-[9px] rounded text-[11px] font-semibold tracking-[0.06em] w-full text-left transition-colors duration-150 border-0 cursor-pointer no-underline';
 const navActive = 'bg-crimson text-white';
@@ -69,6 +76,7 @@ export default function AllocationLayout({
   const studentId = userStr ? JSON.parse(userStr).id : null;
   const { data: allocState } = useActiveBatch(studentId);
   const [showPopup, setShowPopup] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // ── Centralized Pusher → TanStack Query bridge ────────────────
   // Mount once here so ALL child pages share one set of listeners.
@@ -83,11 +91,24 @@ export default function AllocationLayout({
 
   return (
     <div className="flex flex-col min-h-screen bg-canvas">
-      <TopNav liveStatus />
+      <TopNav liveStatus onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
 
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0 relative overflow-hidden">
         {/* ── Sidebar ─────────────────────────────────────────── */}
-        <aside className="w-[200px] shrink-0 bg-card border-r border-border flex flex-col sticky top-[52px] h-[calc(100vh-52px)] overflow-y-auto">
+        {/* Mobile overlay */}
+        {isSidebarOpen && (
+          <div 
+            className="md:hidden fixed inset-0 bg-black/50 z-40" 
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+        
+        <aside className={`
+          absolute md:relative z-50 md:z-0
+          w-[200px] shrink-0 bg-card border-r border-border flex flex-col h-[calc(100vh-52px)] overflow-y-auto
+          transition-transform duration-300 ease-in-out
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}>
 
           {/* Profile */}
           <div className="px-4 pt-5 pb-4 border-b border-border">
@@ -100,12 +121,32 @@ export default function AllocationLayout({
 
           {/* Nav items */}
           <nav className="flex flex-col gap-0.5 p-2.5 flex-1">
+            {/* Mobile-only TopNav clones */}
+            <div className="md:hidden flex flex-col gap-0.5 pb-2.5 mb-2.5 border-b border-border">
+              {TOP_NAV_LINKS.map(({ label, to, icon: Icon }) => (
+                <NavLink
+                  key={label}
+                  to={to}
+                  onClick={() => setIsSidebarOpen(false)}
+                  end
+                  className={({ isActive }) =>
+                    `${navBase} ${isActive ? navActive : navIdle}`
+                  }
+                >
+                  <span className="shrink-0"><Icon /></span>
+                  {label.toUpperCase()}
+                </NavLink>
+              ))}
+            </div>
+
+            {/* Sidebar nav items */}
             {NAV_ITEMS.map(({ label, Icon, to }) =>
               to ? (
                 /* Linked — NavLink handles active state automatically */
                 <NavLink
                   key={label}
                   to={to}
+                  onClick={() => setIsSidebarOpen(false)}
                   className={({ isActive }) =>
                     `${navBase} ${isActive ? navActive : navIdle}`
                   }
