@@ -66,7 +66,7 @@ export default function AllocationLayout({
   useEffect(() => {
     allocationSocket.connect();
     return () => allocationSocket.disconnect();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Join/switch hostel room whenever hostelId changes
   useEffect(() => {
@@ -124,6 +124,7 @@ export default function AllocationLayout({
           <nav className="flex flex-col gap-0.5 p-2.5 flex-1">
             {/* Mobile-only TopNav clones */}
             <div className="md:hidden flex flex-col gap-0.5 pb-2.5 mb-2.5 border-b border-border">
+              {/* eslint-disable-next-line no-unused-vars */}
               {TOP_NAV_LINKS.map(({ label, to, icon: Icon }) => (
                 <NavLink
                   key={label}
@@ -141,6 +142,7 @@ export default function AllocationLayout({
             </div>
 
             {/* Sidebar nav items */}
+            {/* eslint-disable-next-line no-unused-vars */}
             {NAV_ITEMS.map(({ label, Icon, to }) =>
               to ? (
                 /* Linked — NavLink handles active state automatically */
