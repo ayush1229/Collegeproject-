@@ -51,13 +51,14 @@ const navDead   = 'text-text-muted bg-transparent cursor-not-allowed';
  *   phase         – sidebar profile label
  *   batch         – sidebar profile sub-label
  *   lockEnabled   – activates the Lock Selection button
+ *   hostelId      – pass from page to enable socket room subscription
  */
 export default function AllocationLayout({
   children,
   phase       = 'Selection Phase',
   batch       = 'Batch TBD',
   lockEnabled = false,
-  hostelId    = null,   // pass from page to enable socket room subscription
+  hostelId    = null,
 }) {
   // ── Socket lifecycle: connect once, disconnect on leave ──────
   // Hooks (useLiveRooms, useAllocationState, useSquad) only call .on()/.off().
@@ -204,4 +205,17 @@ export default function AllocationLayout({
       </div>
     </div>
   );
+              <PreferenceBuilder 
+                studentId={studentId} 
+                allocationState={allocState} 
+                isLiveMode={true} 
+                onClose={() => setShowPopup(false)}
+              />
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
 }
+>>>>>>> db952a6a4a0ac6a9c2018fe020dd25a2a1968e08
