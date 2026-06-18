@@ -205,17 +205,4 @@ export default function AllocationLayout({
       </div>
     </div>
   );
-              <PreferenceBuilder 
-                studentId={studentId} 
-                allocationState={allocState} 
-                isLiveMode={true} 
-                onClose={() => setShowPopup(false)}
-              />
-            </div>
-          )}
-        </main>
-      </div>
-    </div>
-  );
 }
->>>>>>> db952a6a4a0ac6a9c2018fe020dd25a2a1968e08
