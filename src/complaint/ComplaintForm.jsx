@@ -6,6 +6,7 @@ function ComplaintForm() {
   
   const [formData, setFormData] = useState({
     title: '',
+    type: '',
     description: '',
     priority: 'medium'
   });
@@ -50,9 +51,9 @@ function ComplaintForm() {
         },
         body: JSON.stringify({
           title: formData.title,
+          type: formData.type,
           description: formData.description,
           hostel: user.hostel, 
-         
         })
       });
 
@@ -122,6 +123,29 @@ function ComplaintForm() {
               maxLength="100"
               disabled={isSubmitting}
             />
+          </div>
+
+          <div>
+            <label className={labelStyles}>
+              Complaint Type <span className="text-red-500">*</span>
+            </label>
+            <select
+              required
+              name="type"
+              value={formData.type}
+              onChange={handleChange}
+              className={inputStyles}
+              disabled={isSubmitting}
+            >
+              <option value="" disabled>Select Type</option>
+              <option value="Electrical">Electrical</option>
+              <option value="Plumbing">Plumbing</option>
+              <option value="Carpentry">Carpentry</option>
+              <option value="Internet/WiFi">Internet / Wi-Fi</option>
+              <option value="Cleanliness">Cleanliness</option>
+              <option value="Mess/Food">Mess / Food</option>
+              <option value="Other">Other</option>
+            </select>
           </div>
 
           <div>

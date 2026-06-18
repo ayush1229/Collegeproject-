@@ -2,6 +2,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
+import { useNavigate } from "react-router-dom";
 
 import CreateOutpass from "./CreateOutpasses";
 
@@ -12,6 +13,7 @@ import {
 } from "../utils/api";
 
 export default function OutpassLayout() {
+  const navigate = useNavigate();
 
   const [active, setActive] =
     useState("my");
@@ -152,6 +154,14 @@ export default function OutpassLayout() {
             }
             onClick={() =>
               setActive("cancel")
+            }
+          />
+
+          <NavItem
+            title="Complaints"
+            active={false}
+            onClick={() =>
+              navigate("/complaint")
             }
           />
 

@@ -43,6 +43,15 @@ export default function AdminLayout() {
       return "Rejected Outpasses";
     }
 
+    if (
+      location.pathname.includes(
+        "/complaints"
+      )
+    ) {
+
+      return "Hostel Complaints";
+    }
+
     return "Pending Outpasses";
   }
 
@@ -92,6 +101,12 @@ export default function AdminLayout() {
             to="/attendant/rejected"
             title="Rejected Outpasses"
             icon="❌"
+          />
+
+          <NavItem
+            to="/attendant/complaints"
+            title="Complaints"
+            icon="🛠️"
           />
 
         </nav>
