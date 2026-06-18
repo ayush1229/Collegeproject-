@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import client from '../../../room_allocation/api/client.js';
 
-export default function StudentImportModal({ isOpen, onClose, hostels = [], activeHostelId = '' }) {
+export default function StudentImportModal({ isOpen, onClose, onSuccess, hostels = [], activeHostelId = '' }) {
   const [step, setStep] = useState('SELECT_HOSTEL'); // SELECT_HOSTEL, UPLOAD, MAPPING, REPORT
   const [file, setFile] = useState(null);
   const [selectedHostelId, setSelectedHostelId] = useState(activeHostelId || (hostels[0]?.id || ''));
@@ -92,6 +92,7 @@ export default function StudentImportModal({ isOpen, onClose, hostels = [], acti
       
       setReport(res.result ?? res);
       setStep('REPORT');
+      if (onSuccess) onSuccess(); // Trigger background refresh
     } catch (err) {
       setError(err.message || "Import failed.");
     } finally {
@@ -172,7 +173,7 @@ export default function StudentImportModal({ isOpen, onClose, hostels = [], acti
                   </thead>
                   <tbody className="divide-y divide-border">
                     {dbFields.map(dbField => {
-                      const isRequired = ['name', 'email', 'department'].includes(dbField);
+                      const isRequired = ['name', 'department'].includes(dbField);
                       return (
                         <tr key={dbField} className="hover:bg-canvas transition-colors">
                           <td className="px-4 py-3 font-medium text-text-primary">

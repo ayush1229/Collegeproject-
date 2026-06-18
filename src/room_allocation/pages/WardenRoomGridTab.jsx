@@ -7,6 +7,7 @@ export default function WardenRoomGridTab() {
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [assignStudentId, setAssignStudentId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [searchRoom, setSearchRoom] = useState('');
 
   const handleManualAssign = async () => {
     if (!assignStudentId || !selectedRoom) return;
@@ -78,10 +79,26 @@ export default function WardenRoomGridTab() {
 
   return (
     <div>
-      <h1 className="text-[24px] font-black text-text-primary mb-5">Room Grid & Manual Assignment</h1>
+      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-5">
+        <h1 className="text-[24px] font-black text-text-primary m-0">Room Grid & Manual Assignment</h1>
+        <div className="relative w-full md:w-[250px]">
+          <input 
+            type="text" 
+            placeholder="Search Room Number..." 
+            value={searchRoom}
+            onChange={(e) => setSearchRoom(e.target.value)}
+            className="w-full pl-9 pr-3 py-2 bg-card border border-border rounded text-[12px] focus:outline-none focus:border-crimson transition-colors"
+          />
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+      </div>
+
       <div className="flex flex-col gap-5">
-        <div className="grid grid-cols-4 gap-4">
-          {rooms.map(room => (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {rooms.filter(r => !searchRoom || r.roomNumber.toLowerCase().includes(searchRoom.toLowerCase())).map(room => (
             <button
               key={room.id}
               onClick={() => setSelectedRoom(room)}
@@ -137,21 +154,25 @@ export default function WardenRoomGridTab() {
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-6">
-                {Array(selectedRoom.capacity).fill(0).map((_, idx) => (
-                  <div key={idx} className={`border border-border rounded p-4 ${idx < selectedRoom.occupancy ? 'bg-green-50/30' : 'bg-canvas'}`}>
-                    <p className="text-[12px] font-bold text-text-secondary mb-3">BED {idx + 1}</p>
-                    <div className={`w-full h-16 border-2 border-dashed rounded flex items-center justify-center mb-3 text-[24px] ${idx < selectedRoom.occupancy ? 'border-green-200' : 'border-border'}`}>
-                      🛏️
+                {Array(selectedRoom.capacity).fill(0).map((_, idx) => {
+                  const occupant = selectedRoom.occupants && selectedRoom.occupants[idx];
+                  return (
+                    <div key={idx} className={`border border-border rounded p-4 flex flex-col h-[130px] ${occupant ? 'bg-green-50/30 border-green-200' : 'bg-canvas'}`}>
+                      <p className="text-[12px] font-bold text-text-secondary shrink-0">BED {idx + 1}</p>
+                      {occupant ? (
+                        <div className="flex flex-col justify-center flex-1 w-full overflow-hidden mt-1 gap-1">
+                          <p className="text-[16px] text-green-800 font-black truncate" title={occupant.name}>{occupant.name}</p>
+                          <p className="text-[14px] text-green-700 font-mono font-bold">{occupant.roll_no}</p>
+                          <p className="text-[13px] text-green-600 font-semibold truncate" title={occupant.branch}>{occupant.branch}</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col justify-center items-center flex-1 w-full mt-2 border-2 border-dashed border-border rounded">
+                          <p className="text-[13px] text-text-muted font-bold">Empty</p>
+                        </div>
+                      )}
                     </div>
-                    {idx < selectedRoom.occupancy ? (
-                      <p className="text-[11px] text-green-700 font-bold text-center">Assigned</p>
-                    ) : (
-                      <div className="text-center">
-                        <p className="text-[11px] text-text-muted font-medium mb-2">Empty</p>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {selectedRoom.occupancy < selectedRoom.capacity && (

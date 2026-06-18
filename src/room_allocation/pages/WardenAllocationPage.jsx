@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink, Outlet, Navigate, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, Navigate, useLocation, Link } from 'react-router-dom';
 import { allocationSocket, WS_EVENTS } from '../sockets/allocation.socket.js';
 import { apiFetch } from '../../utils/api';
 
@@ -14,14 +14,15 @@ const navActive = 'bg-crimson text-white';
 const navIdle = 'text-text-secondary bg-transparent hover:bg-canvas hover:text-text-primary';
 
 export default function WardenAllocationPage() {
-  const [notifications, setNotifications] = useState([]);
-  
   // Real Data State
   const [hostels, setHostels] = useState([]);
   const [selectedHostel, setSelectedHostel] = useState('');
   const [analytics, setAnalytics] = useState(null);
   const [rooms, setRooms] = useState([]);
   const [unallocatedStudents, setUnallocatedStudents] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isFetchingData, setIsFetchingData] = useState(false);
   const location = useLocation();
 
   // Fetch Hostels on Mount
@@ -52,6 +53,11 @@ export default function WardenAllocationPage() {
 
   const fetchHostelData = async (hostelId) => {
     if (!hostelId) return;
+    setIsFetchingData(true);
+    // Clear stale data immediately so incorrect data is never served
+    setAnalytics(null);
+    setRooms([]);
+    setUnallocatedStudents([]);
     try {
       // 1. Fetch Analytics
       const analyticsData = await apiFetch(`/api/warden/analytics/${hostelId}`);
@@ -69,6 +75,8 @@ export default function WardenAllocationPage() {
 
     } catch (err) {
       console.error("Failed to fetch hostel data:", err);
+    } finally {
+      setIsFetchingData(false);
     }
   };
 
@@ -122,27 +130,48 @@ export default function WardenAllocationPage() {
   return (
     <div className="flex flex-col min-h-screen bg-canvas">
       {/* ── Top Nav ────────────────────────────────────────────── */}
-      <header className="flex items-center gap-10 px-8 h-[52px] bg-card border-b border-border sticky top-0 z-50 shrink-0">
-        <div className="text-[13px] font-black tracking-[0.05em] text-crimson whitespace-nowrap shrink-0">
-          FIRST YEAR ROOM ALLOCATION
+      <header className="flex items-center justify-between px-4 md:px-8 h-[52px] bg-card border-b border-border sticky top-0 z-50 shrink-0">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="md:hidden flex items-center justify-center p-1.5 -ml-1.5 text-text-secondary hover:bg-canvas rounded border-0 bg-transparent cursor-pointer"
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 6h16M4 12h16M4 18h16" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          <div className="text-[13px] font-black tracking-[0.05em] text-crimson whitespace-nowrap shrink-0 hidden sm:block">
+            ADMIN DASHBOARD
+          </div>
         </div>
-        <nav className="flex gap-7 flex-1 justify-between items-center">
-          <span className="text-xs font-medium tracking-[0.02em] pb-[3px] border-b-2 border-transparent text-text-secondary">Warden Portal</span>
-          {isOverview && currentOccupied > 0 && (
-            <button 
-              onClick={handleRollback}
-              className="text-[11px] font-bold bg-red-100 text-red-700 hover:bg-red-200 px-3 py-1.5 rounded"
-            >
-              ROLLBACK ALLOCATIONS
-            </button>
-          )}
-        </nav>
+
+        <div className="flex items-center gap-4">
+          <button onClick={handleRollback} className="px-3 py-1.5 bg-red-50 text-red-600 border border-red-200 rounded text-[11px] font-bold cursor-pointer hover:bg-red-100 transition-colors">
+            ROLLBACK ALLOCATION
+          </button>
+          <Link to="/" className="text-[11px] font-bold text-text-muted no-underline hover:text-text-primary">
+            EXIT
+          </Link>
+        </div>
       </header>
 
       {/* ── Main Layout ────────────────────────────────────────────── */}
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0 relative overflow-hidden">
         {/* ── Sidebar ─────────────────────────────────────────── */}
-        <aside className="w-[200px] shrink-0 bg-card border-r border-border flex flex-col sticky top-[52px] h-[calc(100vh-52px)] overflow-y-auto">
+        {/* Mobile overlay */}
+        {isSidebarOpen && (
+          <div 
+            className="md:hidden fixed inset-0 bg-black/50 z-40" 
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+        
+        <aside className={`
+          absolute md:relative z-50 md:z-0
+          w-[200px] shrink-0 bg-card border-r border-border flex flex-col h-[calc(100vh-52px)] overflow-y-auto
+          transition-transform duration-300 ease-in-out
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}>
           <div className="px-4 pt-5 pb-4 border-b border-border">
             <div className="w-[52px] h-[52px] rounded bg-[#eeeeec] border border-border-dark flex items-center justify-center text-text-muted mb-2.5 text-[20px]">
               👨‍⚖️
@@ -158,6 +187,7 @@ export default function WardenAllocationPage() {
               <NavLink
                 key={to}
                 to={to}
+                onClick={() => setIsSidebarOpen(false)}
                 className={({ isActive }) => `${navBase} ${isActive ? navActive : navIdle}`}
               >
                 <span className="shrink-0"><Icon /></span>
@@ -193,7 +223,8 @@ export default function WardenAllocationPage() {
               <select
                 value={selectedHostel}
                 onChange={(e) => setSelectedHostel(e.target.value)}
-                className="px-3 py-1.5 bg-white border border-border rounded text-[12px] text-text-primary cursor-pointer max-w-xs"
+                disabled={isFetchingData}
+                className="px-3 py-1.5 bg-white border border-border rounded text-[12px] text-text-primary cursor-pointer max-w-xs disabled:opacity-50"
               >
                 {hostels.map(h => (
                   <option key={h.id} value={h.id}>{h.name}</option>
@@ -201,12 +232,22 @@ export default function WardenAllocationPage() {
               </select>
             </div>
 
-            <Outlet context={{
-              hostels, selectedHostel, setSelectedHostel,
-              analytics, rooms, unallocatedStudents,
-              notifications, setNotifications,
-              refreshData: () => fetchHostelData(selectedHostel)
-            }} />
+            {/* Loading Indicator */}
+            {isFetchingData && (
+              <div className="w-full h-1 bg-indigo-100 rounded overflow-hidden mb-4">
+                <div className="h-full bg-indigo-600 w-full animate-pulse"></div>
+              </div>
+            )}
+
+            {/* Faded Outlet wrapper during fetch */}
+            <div className={`transition-opacity duration-300 ${isFetchingData ? 'opacity-40 pointer-events-none select-none' : 'opacity-100'}`}>
+              <Outlet context={{
+                hostels, selectedHostel, setSelectedHostel,
+                analytics, rooms, unallocatedStudents,
+                notifications, setNotifications,
+                refreshData: () => fetchHostelData(selectedHostel)
+              }} />
+            </div>
             
           </div>
         </main>
