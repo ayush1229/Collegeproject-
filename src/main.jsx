@@ -27,6 +27,7 @@ import AdminLayout from "./attendant/AdminLayout";
 import PendingPage from "./attendant/PendingPage";
 import ApprovedPage from "./attendant/ApprovedPage";
 import RejectedPage from "./attendant/RejectedPage";
+import ComplaintsPage from "./attendant/ComplaintsPage";
 import Admin from "./admin/admin";
 
 /* ================= GUARD ================= */
@@ -112,6 +113,10 @@ const router = createBrowserRouter([
       {
         path: "rejected",
         element: <RejectedPage />,
+      },
+      {
+        path: "complaints",
+        element: <ComplaintsPage />,
       },
     ],
   },
