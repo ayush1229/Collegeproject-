@@ -49,3 +49,13 @@ export const batchKeys = {
     /** Final allocation result: batchKeys.result(studentId) */
     result:  (studentId) => ['final-allocation', studentId],
 };
+
+// ── Admin ─────────────────────────────────────────────────────────────────────
+export const adminKeys = {
+    /** All hostels list (admin view): adminKeys.hostels() */
+    hostels: () => ['admin-hostels'],
+    /** All hostels with their rooms (pool configurator): adminKeys.hostelsWithRooms() */
+    hostelsWithRooms: () => ['admin-hostels-with-rooms'],
+    /** Current pool config for a FROM hostel: adminKeys.pool(fromHostelId) */
+    pool: (fromHostelId) => ['admin-pool', fromHostelId],
+};
